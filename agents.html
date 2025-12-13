@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Watch - Case Files</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome for Icons (using CDN for simplicity) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Mobile Menu Toggle -->
+        <button class="menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">SILENT WATCH</div>
+                <button class="close-menu" id="close-menu"><i class="fas fa-times"></i></button>
+            </div>
+
+            <nav class="nav-links">
+
+                <a href="escape-room.html"><i class="fas fa-dungeon"></i> Escape Rooms</a>
+                <a href="home.html"><i class="fas fa-folder-open"></i> Active Cases</a>
+                <a href="agents.html" class="active"><i class="fas fa-users"></i> Agents</a>
+            </nav>
+
+            <div class="user-profile-wrapper">
+                <div class="user-profile" id="profile-toggle">
+                    <div class="avatar"></div>
+                    <div class="user-info">
+                        <span class="name">Detective</span>
+                        <span class="status">Level 5 Clearance</span>
+                    </div>
+                    <i class="fas fa-chevron-up toggle-icon"></i>
+                </div>
+                <div class="profile-menu" id="profile-menu">
+                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="page-header">
+                <div class="logo-text">SILENT <img
+                        src="https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Gemini_Generated_Image_fbbszgfbbszgfbbs%20(1).png?alt=media&token=590ea21b-d64e-48d1-b3f7-fdfe965a7c0f"
+                        class="header-logo-icon" alt="Logo"> WATCH</div>
+
+                <div class="header-actions">
+                    <!-- Notification icon removed -->
+                </div>
+            </header>
+
+            <!-- Agents View -->
+            <div id="agents-view" class="active" style="display: block;">
+                <div class="view-header">
+                    <h2><i class="fas fa-network-wired"></i> Global Agent Network</h2>
+                    <p>Verified Personnel List</p>
+                </div>
+                <div id="agents-list" class="agents-grid">
+                    <!-- Agents populated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <canvas id="rain-canvas"></canvas>
+    <script type="module" src="dashboard.js?v=1.2"></script>
+    <script src="rain.js"></script>
+</body>
+
+</html>

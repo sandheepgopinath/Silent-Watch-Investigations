@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Watch - Case Files</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome for Icons (using CDN for simplicity) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Sticky Found Killer Button -->
+        <button id="btn-found-killer" class="found-killer-btn" style="display: none;">
+            <i class="fas fa-search"></i> FOUND KILLER?
+        </button>
+        <!-- Mobile Menu Toggle -->
+        <button class="menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">SILENT WATCH</div>
+                <button class="close-menu" id="close-menu"><i class="fas fa-times"></i></button>
+            </div>
+
+            <nav class="nav-links">
+
+                <a href="escape-room.html"><i class="fas fa-dungeon"></i> Escape Rooms</a>
+                <a href="home.html"><i class="fas fa-folder-open"></i> Active Cases</a>
+                <a href="agents.html"><i class="fas fa-users"></i> Agents</a>
+            </nav>
+
+            <div class="user-profile-wrapper">
+                <div class="user-profile" id="profile-toggle">
+                    <div class="avatar"></div>
+                    <div class="user-info">
+                        <span class="name">Detective</span>
+                        <span class="status">Level 5 Clearance</span>
+                    </div>
+                    <i class="fas fa-chevron-up toggle-icon"></i>
+                </div>
+                <div class="profile-menu" id="profile-menu">
+                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="page-header">
+                <div class="logo-text">SILENT <img
+                        src="https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Gemini_Generated_Image_fbbszgfbbszgfbbs%20(1).png?alt=media&token=590ea21b-d64e-48d1-b3f7-fdfe965a7c0f"
+                        class="header-logo-icon" alt="Logo"> WATCH</div>
+
+                <div class="header-actions">
+                    <!-- Notification icon removed -->
+                </div>
+            </header>
+
+            <!-- Case File View -->
+            <div id="case-file-view" class="content-view" style="display: block;">
+
+                <div class="view-header">
+                    <h2>Case File</h2>
+                    <p class="view-subtitle">Blackwood Manor Mystery</p>
+                </div>
+                <div class="case-file-grid">
+                    <!-- Card 1: Brief -->
+                    <!-- Card 1: Brief -->
+                    <div class="file-card" id="card-brief">
+                        <div class="file-icon" style="background-image: url('assets/icon_brief.png')">
+                            <div class="status-indicator viewed"><i class="fas fa-check"></i></div>
+                        </div>
+                        <h3>Investigation Brief</h3>
+                        <p style="color: var(--accent-gold)">Status: Viewed</p>
+                    </div>
+
+                    <!-- Card 2: Report -->
+                    <div class="file-card" id="card-report">
+                        <div class="file-icon" style="background-image: url('assets/icon_report.png')">
+                            <div class="status-indicator"><i class="fas fa-lock-open"></i></div>
+                        </div>
+                        <h3>Postmortem Report</h3>
+                        <p>Status: Unopened</p>
+                    </div>
+
+                    <!-- Card 3: Layout -->
+                    <div class="file-card" id="card-layout">
+                        <div class="file-icon" style="background-image: url('assets/icon_layout.png')">
+                            <div class="status-indicator"><i class="fas fa-lock-open"></i></div>
+                        </div>
+                        <h3>Manor Layout</h3>
+                        <p>Status: Unopened</p>
+                    </div>
+
+                    <!-- Card 4: Locker -->
+                    <div class="file-card" id="card-locker">
+                        <div class="file-icon" style="background-image: url('assets/icon_locker.png')">
+                            <!-- Icon removed as requested -->
+                        </div>
+                        <h3>Evidence Locker</h3>
+                        <p id="locker-status-label"
+                            style="color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">STATUS: AVAILABLE
+                        </p>
+                        <div class="tile-timer" id="tile-timer" style="display: none;">05:00</div>
+                    </div>
+
+                    <!-- Card 5: CCTV (Initially Hidden) -->
+                    <div class="file-card" id="card-cctv" style="display: none;">
+                        <div class="file-icon"
+                            style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/cctv.jpg?alt=media&token=9c775529-2acc-49fa-b377-ec8d4b04a355'); background-size: cover; background-position: center;">
+                            <div class="status-indicator"><i class="fas fa-lock"></i></div>
+                        </div>
+                        <h3>Manor CCTV</h3>
+                        <p style="color: var(--accent-red); font-weight: bold;">ENCRYPTED</p>
+                    </div>
+                </div>
+
+                <div class="section-divider"
+                    style="margin: 3rem 0; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <h3 style="font-family: var(--font-heading); color: var(--accent-gold);">Prime Suspects</h3>
+                </div>
+
+                <div class="suspects-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    <!-- Rohan Rathore -->
+                    <div class="suspect-card" id="suspect-rohan">
+                        <div class="suspect-image"
+                            style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Rohan.png?alt=media&token=57d2e062-1e3d-49a0-ba85-90e1b6bd7e8e')">
+                        </div>
+                        <div class="suspect-info">
+                            <h3>Rohan Rathore</h3>
+                            <p class="role">The Estranged Son</p>
+                            <p class="desc">Arjun's son. Initially supportive, he began fighting with his father over
+                                the
+                                12cr purchase of the manor, fearing his inheritance was being wasted.</p>
+                            <button class="action-btn interrogate-btn" id="btn-interrogate-rohan">
+                                <i class="fas fa-comments"></i> Interrogate Suspect
+                            </button>
+                            <div id="rohan-timer" class="cooldown-timer"></div>
+                        </div>
+                    </div>
+
+                    <!-- Vikram -->
+                    <div class="suspect-card" id="suspect-vikram">
+                        <div class="suspect-image"
+                            style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Vikram.png?alt=media&token=6b800f58-98d5-4860-a2a8-9839896c2d6d')">
+                        </div>
+                        <div class="suspect-info">
+                            <h3>Vikram</h3>
+                            <p class="role">Real Estate Dealer</p>
+                            <p class="desc">The slick dealer who sold the manor. He set up the security system. Profits
+                                by flipping the 'haunted' house. Arjun's ownership threatened his business.</p>
+                            <button class="action-btn interrogate-btn" id="btn-interrogate-vikram">
+                                <i class="fas fa-comments"></i> Interrogate Suspect
+                            </button>
+                            <div id="vikram-timer" class="cooldown-timer"></div>
+                        </div>
+                    </div>
+
+                    <!-- Maya (Seraphina) -->
+                    <div class="suspect-card" id="suspect-maya">
+                        <div class="suspect-image"
+                            style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Serpahene.png?alt=media&token=c1bb59fd-5156-47b3-aeb2-7c1c2913cf68')">
+                        </div>
+                        <div class="suspect-info">
+                            <h3>Maya (Seraphina)</h3>
+                            <p class="role">The Medium</p>
+                            <p class="desc">Local medium hired for a séance on the night of the death. Claims she felt a
+                                dark presence. Known to prey on the grieving.</p>
+                            <button class="action-btn interrogate-btn" id="btn-interrogate-seraphina">
+                                <i class="fas fa-comments"></i> Interrogate Suspect
+                            </button>
+                            <div id="seraphina-timer" class="cooldown-timer"></div>
+                        </div>
+                    </div>
+
+                    <!-- Pinto -->
+                    <div class="suspect-card" id="suspect-pinto">
+                        <div class="suspect-image"
+                            style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Pinto.png?alt=media&token=40644626-82ad-42f2-a58a-3e35ef436c8c')">
+                        </div>
+                        <div class="suspect-info">
+                            <h3>Mrs. Pinto</h3>
+                            <p class="role">Housekeeper</p>
+                            <p class="desc">The long-serving, tight-lipped housekeeper. She discovered the body. Loyal
+                                to the estate, but hides many secrets.</p>
+                            <button class="action-btn interrogate-btn" id="btn-interrogate-pinto">
+                                <i class="fas fa-comments"></i> Interrogate Suspect
+                            </button>
+                            <div id="pinto-timer" class="cooldown-timer"></div>
+                        </div>
+                    </div>
+
+                    <!-- Anya (Granddaughter) - Initially Hidden -->
+                    <div class="suspect-card" id="suspect-anya" style="display: none;">
+                        <div class="suspect-image"
+                            style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/anya.jpg?alt=media&token=ea1c8b0d-c28f-416a-ab04-204a5c500fec')">
+                        </div>
+                        <div class="suspect-info">
+                            <h3>Anya</h3>
+                            <p class="role">The Granddaughter</p>
+                            <p class="desc">Mrs. Pinto's granddaughter. Visiting the manor. Seen by security cameras
+                                entering through the servant's quarters.</p>
+                            <button class="action-btn interrogate-btn" id="btn-interrogate-anya">
+                                <i class="fas fa-comments"></i> Interrogate Suspect
+                            </button>
+                            <div id="anya-timer" class="cooldown-timer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Modal -->
+            <div class="chat-modal-overlay" id="chat-modal-overlay" style="display: none;">
+                <div class="chat-modal">
+                    <div class="chat-header">
+                        <div class="chat-persona">
+                            <div class="avatar-small"
+                                style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Rohan.png?alt=media&token=57d2e062-1e3d-49a0-ba85-90e1b6bd7e8e')">
+                            </div>
+                            <div>
+                                <h3>Rohan Rathore</h3>
+                                <span class="status-dot online"></span> <span class="status-text">Online</span>
+                            </div>
+                        </div>
+                        <button class="close-chat" id="close-chat-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="chat-body" id="chat-body">
+                        <!-- Messages will appear here -->
+                    </div>
+                    <div class="chat-footer">
+                        <div id="chat-loader"
+                            style="display: none; align-items: center; justify-content: center; width: 100%; color: var(--accent-gold); margin-bottom: 10px;">
+                            <i class="fas fa-spinner fa-spin"></i> <span style="margin-left: 8px;">Loading
+                                History...</span>
+                        </div>
+                        <input type="text" id="chat-input" placeholder="Ask a question..." autocomplete="off">
+                        <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CCTV Login Modal -->
+            <div class="cctv-modal-overlay" id="cctv-modal-overlay" style="display: none;">
+                <div class="cctv-login-card">
+                    <div class="cctv-header">
+                        <i class="fas fa-video"></i> SECURITY ACCESS
+                    </div>
+                    <div class="cctv-body">
+                        <div class="cctv-field">
+                            <label>SYSTEM ID</label>
+                            <input type="text" value="arjuns_manor" disabled class="terminal-input">
+                        </div>
+                        <div class="cctv-field">
+                            <label>PASSCODE</label>
+                            <input type="password" id="cctv-password-input" placeholder="Enter 5-digit code"
+                                class="terminal-input" maxlength="5">
+                        </div>
+                        <div id="cctv-error" class="terminal-error"></div>
+                        <button id="cctv-unlock-btn" class="terminal-btn">UNLOCK FOOTAGE</button>
+                    </div>
+                    <button id="close-cctv-btn" class="close-terminal"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <!-- Case Investigation Modal -->
+            <div class="case-modal-overlay" id="case-modal-overlay">
+                <div class="case-modal">
+                    <div class="modal-header">
+                        <h2>Investigation Brief</h2>
+                        <button class="close-modal"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-content">
+                        <div class="case-meta">
+                            <span class="case-id">Case File: #001</span>
+                            <span class="case-title">The Blackwood Manor Mystery</span>
+                        </div>
+
+                        <div class="brief-section">
+                            <h3><i class="fas fa-user-circle"></i> Victim</h3>
+                            <p><strong>Arjun Singh Rathore</strong>, a wealthy historian and occult enthusiast.</p>
+                        </div>
+
+                        <div class="brief-section">
+                            <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
+                            <p>The library of Blackwood Manor, a decaying British colonial estate near Bengaluru,
+                                infamous for the legend of the "Lady in White."</p>
+                        </div>
+
+                        <div class="brief-section">
+                            <h3><i class="fas fa-history"></i> Background</h3>
+                            <p>Six months prior to his death, Arjun purchased the long-abandoned manor with the express
+                                purpose of proving the existence of the ghost of Lady Eleanor Blackwood, who allegedly
+                                fell from the library gallery in 1888. His initial research was academic and open.</p>
+                        </div>
+
+                        <div class="brief-section">
+                            <h3><i class="fas fa-clock"></i> Timeline of Events</h3>
+                            <ul>
+                                <li><strong>First 5 Months:</strong> Arjun cataloged the manor's contents, conducted
+                                    research in city archives, and documented his work. His demeanor was that of an
+                                    excited academic.</li>
+                                <li><strong>Final Month:</strong> A sudden shift. Arjun became intensely secretive,
+                                    agitated, and paranoid. He confined himself to the library, cut off most outside
+                                    contact, and spoke of a "truth far darker than any ghost story."</li>
+                            </ul>
+                        </div>
+
+                        <div class="brief-section">
+                            <h3><i class="fas fa-skull"></i> Crime Scene</h3>
+                            <p>On a stormy night, Arjun Rathore fell from the library gallery, his body discovered the
+                                next morning by the housekeeper. He died in the exact same spot as the legendary Lady
+                                Eleanor. The postmortem report notes his face was frozen in an expression of pure
+                                terror.</p>
+                        </div>
+
+                        <div class="alert-box">
+                            <h4><i class="fas fa-exclamation-triangle"></i> A Word of Caution</h4>
+                            <p>This investigation will lead you into the shadows of history. Be prepared for themes of
+                                tragedy, deceit, and potentially supernatural encounters.</p>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="action-btn reject" id="reject-case">Reject Case</button>
+                        <button class="action-btn accept" id="accept-case">Accept Case</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <canvas id="rain-canvas"></canvas>
+    <script type="module" src="dashboard.js?v=1.2"></script>
+    <script src="rain.js"></script>
+    <!-- Victory Modal -->
+    <div class="case-modal-overlay" id="victory-modal-overlay" style="display: none; z-index: 2000;">
+        <div class="case-modal" style="text-align: center; border: 1px solid var(--accent-gold);">
+            <button class="close-modal" id="close-victory-btn" style="position: absolute; right: 20px; top: 20px;"><i
+                    class="fas fa-times"></i></button>
+
+            <div class="modal-content"
+                style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem; padding: 2rem;">
+                <div
+                    style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                    <i class="fas fa-check" style="font-size: 2.5rem; color: var(--accent-gold);"></i>
+                </div>
+
+                <h2 style="font-family: var(--font-heading); font-size: 2.5rem; margin: 0; color: #fff;">CASE CLOSED
+                </h2>
+                <p style="font-size: 1.1rem; color: #aaa; margin: 0;">Excellent work, Detective.</p>
+
+                <div
+                    style="background: rgba(255,255,255,0.05); padding: 1rem 2rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); width: 100%;">
+                    <p
+                        style="font-size: 0.9rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">
+                        Time Taken</p>
+                    <h3 id="victory-time"
+                        style="font-family: var(--font-mono); font-size: 1.8rem; color: var(--accent-gold); margin: 0;">
+                        00:00:00</h3>
+                </div>
+
+                <div
+                    style="width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-gold), transparent); margin: 1rem 0;">
+                </div>
+
+                <h3 style="font-family: var(--font-heading); color: #fff;">NEXT ASSIGNMENT: DARK NEXUS</h3>
+                <p style="line-height: 1.6; color: #ccc; max-width: 500px;">
+                    We are initiating a new protocol. Bring your team for an <strong>unforgettable escape room
+                        experience</strong>.
+                    As a verified investigator, your entry is on the house.
+                </p>
+
+                <div
+                    style="background: #000; padding: 1rem; border: 2px dashed var(--accent-gold); border-radius: 8px; margin-top: 0.5rem;">
+                    <p style="font-size: 0.8rem; color: var(--accent-gold); margin-bottom: 5px;">YOUR UNIQUE ACCESS CODE
+                    </p>
+                    <h2 id="victory-code"
+                        style="font-family: var(--font-mono); font-size: 2rem; letter-spacing: 5px; color: #fff; margin: 0;">
+                        -----</h2>
+                </div>
+
+                <button id="claim-reward-btn" class="action-btn"
+                    style="margin-top: 1rem; font-size: 1.1rem; padding: 1rem 3rem;">
+                    <i class="fas fa-ticket-alt"></i> CLAIM REWARD
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Evidence Locker Modal -->
+    <div id="locker-modal-overlay" class="modal-overlay">
+
+
+        <div class="locker-modal">
+            <button id="close-locker-btn" class="close-modal-btn">&times;</button>
+            <div class="locker-content">
+                <div class="safe-display">
+                    <img src="assets/safe_3d.png" alt="Digital Safe" class="safe-image">
+                    <div class="safe-screen-container">
+                        <div id="safe-screen" class="safe-screen">ENTER CODE</div>
+                        <div id="safe-timer" class="safe-timer" style="display: none;">LOCKED 05:00</div>
+                    </div>
+                </div>
+                <div class="safe-keypad">
+                    <div class="keypad-row">
+                        <button class="key-btn" data-key="1">1</button>
+                        <button class="key-btn" data-key="2">2</button>
+                        <button class="key-btn" data-key="3">3</button>
+                    </div>
+                    <div class="keypad-row">
+                        <button class="key-btn" data-key="4">4</button>
+                        <button class="key-btn" data-key="5">5</button>
+                        <button class="key-btn" data-key="6">6</button>
+                    </div>
+                    <div class="keypad-row">
+                        <button class="key-btn" data-key="7">7</button>
+                        <button class="key-btn" data-key="8">8</button>
+                        <button class="key-btn" data-key="9">9</button>
+                    </div>
+                    <div class="keypad-row">
+                        <button class="key-btn action-key" data-key="clear">C</button>
+                        <button class="key-btn" data-key="0">0</button>
+                        <button class="key-btn action-key" data-key="enter">ENTER</button>
+                    </div>
+                </div>
+            </div>
+            <div class="locker-status">Status: <span id="locker-status-text">LOCKED</span></div>
+            <div id="attempts-display" class="attempts-display">Attempts Remaining: 4</div>
+            <div class="locker-feedback-glass">
+                <p class="locker-hint"><i class="fas fa-lightbulb"
+                        style="color: var(--accent-gold); margin-right: 5px;"></i> Interrogating suspects may reveal the
+                    locker code.</p>
+                <p class="locker-info"><i class="fas fa-exclamation-triangle"
+                        style="color: #ff3333; margin-right: 5px;"></i> Warning: 4 incorrect attempts will lock the
+                    system for 5 minutes.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

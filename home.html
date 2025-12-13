@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Watch - Case Files</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome for Icons (using CDN for simplicity) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Mobile Menu Toggle -->
+        <button class="menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">SILENT WATCH</div>
+                <button class="close-menu" id="close-menu"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="nav-links">
+
+                <a href="escape-room.html"><i class="fas fa-dungeon"></i> Escape Rooms</a>
+                <a href="home.html" class="active"><i class="fas fa-folder-open"></i> Active Cases</a>
+                <a href="agents.html"><i class="fas fa-users"></i> Agents</a>
+            </nav>
+
+            <div class="user-profile-wrapper">
+                <div class="user-profile" id="profile-toggle">
+                    <div class="avatar"></div>
+                    <div class="user-info">
+                        <span class="name">Detective</span>
+                        <span class="status">Level 5 Clearance</span>
+                    </div>
+                    <i class="fas fa-chevron-up toggle-icon"></i>
+                </div>
+                <div class="profile-menu" id="profile-menu">
+                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="page-header">
+                <div class="logo-text">SILENT <img
+                        src="https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Gemini_Generated_Image_fbbszgfbbszgfbbs%20(1).png?alt=media&token=590ea21b-d64e-48d1-b3f7-fdfe965a7c0f"
+                        class="header-logo-icon" alt="Logo"> WATCH</div>
+
+                <div class="header-actions">
+                    <!-- Notification icon removed -->
+                </div>
+            </header>
+
+            <div class="cases-grid">
+                <!-- Case 1 -->
+                <article class="case-card">
+                    <div class="case-image" style="background-image: url('assets/blackwood_v2.png')">
+                        <span class="case-badge high-priority">High Priority</span>
+                    </div>
+                    <div class="case-content">
+                        <h3>Blackwood Manor</h3>
+                        <p class="case-subtitle">The Ghost in White</p>
+                        <p class="case-desc">A historian obsessed with a local legend dies under mysterious
+                            circumstances in a haunted manor. Accident, or something more sinister?</p>
+                        <button class="investigate-btn">Investigate
+                            Case</button>
+                    </div>
+                </article>
+
+                <!-- Case 2 -->
+                <article class="case-card">
+                    <div class="case-image" style="background-image: url('assets/psycho.png')">
+                        <span class="case-badge medium">Collecting evidences</span>
+                    </div>
+                    <div class="case-content">
+                        <h3>The Night Stalker</h3>
+                        <p class="case-subtitle">The Psycho Killer</p>
+                        <p class="case-desc">A series of gruesome murders in the downtown district. The killer leaves no
+                            trace but a playing card.</p>
+                        <button class="investigate-btn" disabled style="opacity: 0.5; cursor: not-allowed;">Investigate
+                            Case</button>
+                    </div>
+                </article>
+
+                <!-- Case 3 -->
+                <article class="case-card">
+                    <div class="case-image" style="background-image: url('assets/highway.png')">
+                        <span class="case-badge medium">Collecting evidences</span>
+                    </div>
+                    <div class="case-content">
+                        <h3>Route 66 Disappearances</h3>
+                        <p class="case-subtitle">The Vanishing Highway</p>
+                        <p class="case-desc">Travelers are disappearing on a stretch of old highway. No wreckage, no
+                            distress calls. Just static.</p>
+                        <button class="investigate-btn" disabled style="opacity: 0.5; cursor: not-allowed;">Investigate
+                            Case</button>
+                    </div>
+                </article>
+
+                <!-- Case 4 -->
+                <article class="case-card">
+                    <div class="case-image" style="background-image: url('assets/asylum.png')">
+                        <span class="case-badge medium">Collecting evidences</span>
+                    </div>
+                    <div class="case-content">
+                        <h3>Echoes of the Asylum</h3>
+                        <p class="case-subtitle">Paranormal Activity</p>
+                        <p class="case-desc">Urban explorers found fresh medical logs in a facility closed since 1985.
+                            Sounds of screaming reported.</p>
+                        <button class="investigate-btn" disabled style="opacity: 0.5; cursor: not-allowed;">Investigate
+                            Case</button>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Remove other views -->
+
+        </main>
+    </div>
+
+    <!-- Investigation Brief Modal -->
+    <div class="modal-overlay" id="case-modal-overlay">
+        <div class="case-modal">
+            <div class="modal-header">
+                <h2>Investigation Brief</h2>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-content">
+                <div class="case-meta">
+                    <span class="case-id">Case File: #001</span>
+                    <span class="case-title">The Blackwood Manor Mystery</span>
+                </div>
+
+                <div class="brief-section">
+                    <h3><i class="fas fa-user-circle"></i> Victim</h3>
+                    <p><strong>Arjun Singh Rathore</strong>, a wealthy historian and occult enthusiast.</p>
+                </div>
+
+                <div class="brief-section">
+                    <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
+                    <p>The library of Blackwood Manor, a decaying British colonial estate near Bengaluru,
+                        infamous for the legend of the "Lady in White."</p>
+                </div>
+
+                <div class="brief-section">
+                    <h3><i class="fas fa-history"></i> Background</h3>
+                    <p>Six months prior to his death, Arjun purchased the long-abandoned manor with the express
+                        purpose of proving the existence of the ghost of Lady Eleanor Blackwood. His initial research
+                        was academic.</p>
+                </div>
+
+                <div class="brief-section">
+                    <h3><i class="fas fa-clock"></i> Timeline of Events</h3>
+                    <ul>
+                        <li><strong>First 5 Months:</strong> Arjun cataloged the manor's contents and conducted
+                            research.</li>
+                        <li><strong>Final Month:</strong> A sudden shift. Arjun became intensely secretive,
+                            agitated, and paranoid.</li>
+                    </ul>
+                </div>
+
+                <div class="brief-section">
+                    <h3><i class="fas fa-skull"></i> Crime Scene</h3>
+                    <p>Arjun fell from the library gallery, dying in the exact spot as the legendary Lady Eleanor.
+                        Postmortem notes a face frozen in pure terror.</p>
+                </div>
+
+                <div class="alert-box">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Caution</h4>
+                    <p>Be prepared for themes of tragedy, deceit, and potentially supernatural encounters.</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="action-btn reject" id="reject-case">Reject Case</button>
+                <button class="action-btn accept" id="accept-case">Accept Case</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="rain-canvas"></canvas>
+    <script type="module" src="dashboard.js?v=1.2"></script>
+    <script src="rain.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Watch - Authenticate</title>
+    <!-- Preload Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --accent-purple: #7b2cbf;
+            --accent-cyan: #00b4d8;
+            --text-color: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Lato', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Ambient Glows */
+        .ambient-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .ambient-glow.purple {
+            background: var(--accent-purple);
+            top: -100px;
+            left: -100px;
+        }
+
+        .ambient-glow.cyan {
+            background: var(--accent-cyan);
+            bottom: -100px;
+            right: -100px;
+        }
+
+        /* Auth Card */
+        .auth-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .auth-card {
+            width: 400px;
+            padding: 3rem 2.5rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ley Lines Animation Container */
+        .ley-lines-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 2rem auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 180, 216, 0.3);
+            box-shadow: 0 0 10px rgba(0, 180, 216, 0.1);
+        }
+
+        .ring-1 {
+            width: 100%;
+            height: 100%;
+            animation: spin 10s linear infinite;
+        }
+
+        .ring-2 {
+            width: 70%;
+            height: 70%;
+            animation: spin 7s linear infinite reverse;
+            border-color: rgba(123, 44, 191, 0.4);
+        }
+
+        .ring-3 {
+            width: 40%;
+            height: 40%;
+            animation: spin 12s linear infinite;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        /* Dot positioning on rings */
+        .ring-1 .dot {
+            top: 10%;
+            right: 18%;
+        }
+
+        .ring-2 .dot {
+            bottom: 15%;
+            left: 15%;
+            background: var(--accent-purple);
+            box-shadow: 0 0 8px var(--accent-purple);
+        }
+
+        .ring-3 .dot {
+            top: 50%;
+            left: -3px;
+            transform: translateY(-50%);
+            background: white;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Typography */
+        h1.title {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            letter-spacing: 4px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #ffffff, #a0a0a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        p.subtitle {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+            margin-bottom: 0;
+        }
+
+        /* Form Elements */
+        form {
+            margin-top: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-family: 'Lato', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .input-group input:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 180, 216, 0.2);
+        }
+
+        /* High Visibility Button per Request */
+        .auth-btn {
+            width: 100%;
+            padding: 1rem;
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 50px;
+            /* Rounded pill shape fits the Ley Lines theme */
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            margin-top: 1rem;
+        }
+
+        .auth-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .google-btn {
+            background: white;
+            color: #333;
+            border: none;
+            font-family: 'Lato', sans-serif;
+            /* Keep Google button standard font */
+            text-transform: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .google-btn:hover {
+            background: #f0f0f0;
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .divider {
+            margin: 1.5rem 0;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .divider::before {
+            margin-right: 10px;
+        }
+
+        .divider::after {
+            margin-left: 10px;
+        }
+
+        .error-msg {
+            color: #ff4d4d;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            min-height: 1.2em;
+        }
+
+        /* Locked Indicator Animation Idea? */
+        /* Let's keep it simple for now as requested */
+    </style>
+</head>
+
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-glow purple"></div>
+    <div class="ambient-glow cyan"></div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 class="title">Silent Watch</h1>
+
+
+            <!-- Ley Lines Animation -->
+            <div class="ley-lines-container">
+                <div class="ring ring-1">
+                    <div class="dot"></div>
+                </div>
+                <div class="ring ring-2">
+                    <div class="dot"></div>
+                </div>
+                <div class="ring ring-3">
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Agent Identity (Email)" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Access Code (Password)" required>
+                </div>
+                <button type="submit" class="auth-btn">Access Dashboard</button>
+            </form>
+
+            <form id="signup-form" style="display: none;">
+                <div class="input-group">
+                    <input type="text" id="reg-name" placeholder="Full Name" required>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="reg-email" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <input type="tel" id="reg-phone" placeholder="Phone Number" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="reg-password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="auth-btn">Register New Agent</button>
+            </form>
+
+            <p style="margin-top: 15px; font-size: 0.9rem; color: #aaa;">
+                <a href="#" id="toggle-auth" style="color: var(--accent-gold); text-decoration: none;">New Agent? Sign
+                    Up</a>
+            </p>
+
+            <div class="divider">OR</div>
+
+            <button id="google-login" class="auth-btn google-btn">
+                <i class="fab fa-google"></i> Sign in with Google
+            </button>
+
+            <p class="error-msg" id="error-msg"></p>
+        </div>
+    </div>
+
+    <!-- Auth Logic -->
+    <script type="module">
+        import { loginWithEmail, loginWithGoogle, registerUser } from './auth.js';
+
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const googleBtn = document.getElementById('google-login');
+        const errorMsg = document.getElementById('error-msg');
+        const toggleAuth = document.getElementById('toggle-auth');
+        const formTitle = document.querySelector('.title');
+
+        let isLogin = true;
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.style.display = 'block';
+
+            // Add a little shake animation to the card on error?
+            const card = document.querySelector('.auth-card');
+            card.style.transform = "translateX(5px)";
+            setTimeout(() => card.style.transform = "translateX(-5px)", 50);
+            setTimeout(() => card.style.transform = "translateX(5px)", 100);
+            setTimeout(() => card.style.transform = "translateX(0)", 150);
+        }
+
+        toggleAuth.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLogin = !isLogin;
+            if (isLogin) {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                toggleAuth.textContent = "New Agent? Sign Up";
+                formTitle.textContent = "Silent Watch"; // Uncommented as per original intent
+            } else {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+                toggleAuth.textContent = "Already an Agent? Login";
+                formTitle.textContent = "Agent Registration"; // Uncommented as per original intent
+            }
+            errorMsg.textContent = ""; // Clear error message on form switch
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = loginForm.querySelector('button');
+            const originalText = btn.textContent;
+
+            errorMsg.textContent = "";
+            btn.textContent = 'Verifying...';
+            btn.style.opacity = '0.7';
+
+            try {
+                const result = await loginWithEmail(email, password);
+                if (result.success) {
+                    window.location.href = 'escape-room.html';
+                } else {
+                    showError("Access Denied: " + (result.error || "Unknown error"));
+                    btn.textContent = originalText;
+                    btn.style.opacity = '1';
+                }
+            } catch (err) {
+                showError("System Error: " + err.message);
+                btn.textContent = originalText;
+                btn.style.opacity = '1';
+            }
+        });
+
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const phone = document.getElementById('reg-phone').value;
+            const password = document.getElementById('reg-password').value;
+
+            const btn = signupForm.querySelector('button');
+            const originalText = btn.textContent;
+
+            errorMsg.textContent = "";
+            btn.textContent = "Processing...";
+            btn.style.opacity = '0.7';
+
+            try {
+                const result = await registerUser(email, password, name, phone);
+                if (result.success) {
+                    // Auto login or redirect
+                    window.location.href = 'escape-room.html';
+                } else {
+                    showError("Registration Failed: " + (result.error || "Unknown error"));
+                    btn.textContent = originalText;
+                    btn.style.opacity = '1';
+                }
+            } catch (err) {
+                showError("System Error: " + err.message);
+                btn.textContent = originalText;
+                btn.style.opacity = '1';
+            }
+        });
+
+        googleBtn.addEventListener('click', async () => {
+            errorMsg.textContent = "";
+            try {
+                const result = await loginWithGoogle();
+                if (result.success) {
+                    window.location.href = 'escape-room.html';
+                } else {
+                    showError(result.error || "Verification Failed");
+                }
+            } catch (err) {
+                showError("Connection Error");
+            }
+        });
+    </script>
+</body>
+
+</html>
