@@ -457,15 +457,23 @@
 
         googleBtn.addEventListener('click', async () => {
             errorMsg.textContent = "";
+            const originalContent = googleBtn.innerHTML;
+            googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+            googleBtn.style.opacity = '0.7';
+
             try {
                 const result = await loginWithGoogle();
                 if (result.success) {
                     window.location.href = 'escape-room.html';
                 } else {
                     showError(result.error || "Verification Failed");
+                    googleBtn.innerHTML = originalContent;
+                    googleBtn.style.opacity = '1';
                 }
             } catch (err) {
-                showError("Connection Error");
+                showError("Connection Error: " + err.message);
+                googleBtn.innerHTML = originalContent;
+                googleBtn.style.opacity = '1';
             }
         });
     </script>

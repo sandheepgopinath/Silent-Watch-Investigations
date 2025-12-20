@@ -144,6 +144,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileWrapper = document.querySelector('.user-profile-wrapper');
     const logoutBtn = document.getElementById('logout-btn');
 
+    // Header Scroll Logic
+    let lastScrollY = window.scrollY;
+    const header = document.querySelector('.page-header');
+    const menuButton = document.getElementById('menu-toggle');
+
+    if (header) {
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+
+            // If scrolling down AND passed 100px threshold
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                header.classList.add('hidden');
+                if (menuButton) menuButton.classList.add('hidden');
+            } else {
+                // If scrolling up OR at the top
+                header.classList.remove('hidden');
+                if (menuButton) menuButton.classList.remove('hidden');
+            }
+
+            lastScrollY = currentScrollY;
+        }, { passive: true });
+    }
+
     if (profileToggle && profileWrapper) {
         profileToggle.addEventListener('click', () => {
             profileWrapper.classList.toggle('open');
@@ -160,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuToggle = document.getElementById('menu-toggle');
     const closeMenu = document.getElementById('close-menu');
     const path = window.location.pathname;
-    const isBlackwood = path.includes('case-blackwood.html');
+    const isBlackwood = path.includes('case-blackwood');
 
     if (window.setWeather) {
         if (isBlackwood) {
@@ -209,22 +232,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function triggerRohanIntrusion(uid) {
-        const chatBody = document.getElementById('chat-body');
-        if (chatBody) {
-            const intrusionDiv = document.createElement('div');
-            intrusionDiv.style.textAlign = 'center';
-            intrusionDiv.style.margin = '10px 0';
-            intrusionDiv.innerHTML = `<span style="background: var(--accent-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">Rohan Rathore Joined the Chat</span>`;
-            chatBody.appendChild(intrusionDiv);
+        // Chat messages are now handled by the scripted sequence in sendMessage
+        // This function handles the state updates and UI unlocks
 
-            addMessage("ai", "ROHAN: Lies! I know she was here. I've sent my guys to bring her in. And I'm pulling the CCTV footage right now to prove it!");
-        }
 
         try {
             const caseRef = doc(db, 'users', uid, 'caseProgress', 'blackwood-manor-mystery');
+            const cctvPassword = Math.floor(10000 + Math.random() * 90000).toString();
             await setDoc(caseRef, {
                 anyaProfileUnlocked: true,
                 cctvUnlocked: true,
+                cctvPassword: cctvPassword,
                 rohanIntrusionTriggered: true,
                 lastUpdated: serverTimestamp()
             }, { merge: true });
@@ -254,11 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (path.includes('agents.html')) {
+    if (path.includes('agents')) {
         fetchAgents();
-    } else if (path.includes('escape-room.html')) {
+    } else if (path.includes('escape-room')) {
         startEscapeAnimation();
-    } else if (path.includes('case-blackwood.html')) {
+    } else if (path.includes('case-blackwood')) {
         const btn = document.getElementById('btn-interrogate-rohan');
         if (btn) btn.disabled = false;
     }
@@ -363,7 +381,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function startEscapeAnimation() {
         // Only run if elements exist
         const escapeView = document.getElementById('escape-room-view');
-        if (!escapeView) return;
+        if (!escapeView) {
+            return;
+        }
 
         const line1 = document.getElementById('line1');
         const line2 = document.getElementById('line2');
@@ -973,10 +993,93 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return;
         addMessage("user", text);
         chatInput.value = '';
+
+        if (text === "reset_rohan" && currentUser) {
+            const caseRef = doc(db, 'users', currentUser.uid, 'caseProgress', 'blackwood-manor-mystery');
+            await setDoc(caseRef, { rohanAccusationTriggered: false, lockerStatus: 'unlocked', cctvUnlocked: false }, { merge: true });
+            addMessage("ai", "[System: Rohan Trigger Reset]");
+            return;
+        }
+
+        if (text === "reset_solver" && currentUser) {
+            const caseRef = doc(db, 'users', currentUser.uid, 'caseProgress', 'blackwood-manor-mystery');
+            await setDoc(caseRef, { killerIdentified: false, motiveIdentified: false, modusOperandiIdentified: false, caseClosed: false, partialPinto: false, partialAnya: false }, { merge: true });
+            addMessage("ai", "[System: Solver Progress Reset]");
+            return;
+        }
         showTypingIndicator(aiManager.getCurrentSuspect().name);
-        const response = await aiManager.getResponse(text, chatHistory);
+        let response = await aiManager.getResponse(text, chatHistory);
         removeTypingIndicator();
+
+        // Solver Logic Processing
+        if (aiManager.activeSuspect === 'solver') {
+            const caseRef = doc(db, 'users', currentUser.uid, 'caseProgress', 'blackwood-manor-mystery');
+            if (response.includes('[CORRECT_KILLER]')) {
+                await setDoc(caseRef, { killerIdentified: true }, { merge: true });
+                response = response.replace('[CORRECT_KILLER]', '').trim();
+            } else if (response.includes('[FOUND_PINTO]')) {
+                await setDoc(caseRef, { partialPinto: true }, { merge: true });
+                response = response.replace('[FOUND_PINTO]', '').trim();
+            } else if (response.includes('[FOUND_ANYA]')) {
+                await setDoc(caseRef, { partialAnya: true }, { merge: true });
+                response = response.replace('[FOUND_ANYA]', '').trim();
+            } else if (response.includes('[CORRECT_MOTIVE]')) {
+                await setDoc(caseRef, { motiveIdentified: true }, { merge: true });
+                response = response.replace('[CORRECT_MOTIVE]', '').trim();
+            } else if (response.includes('[CASE_SOLVED]')) {
+                await setDoc(caseRef, { modusOperandiIdentified: true, caseClosed: true }, { merge: true });
+                response = response.replace('[CASE_SOLVED]', '').trim();
+                markBlackwoodClosed();
+                triggerVictorySequence();
+            }
+        }
+
         addMessage("ai", response);
+        if (currentUser) {
+            checkStoryTriggers(aiManager.activeSuspect, currentUser.uid);
+
+            // Rohan Accusation Logic for Pinto
+            if (aiManager.activeSuspect === 'pinto') {
+                try {
+                    const caseRef = doc(db, 'users', currentUser.uid, 'caseProgress', 'blackwood-manor-mystery');
+                    const cSnap = await getDoc(caseRef);
+                    if (cSnap.exists()) {
+                        const data = cSnap.data();
+                        console.log("DEBUG: Checking Trigger", data.lockerStatus, data.diaryUnlocked, data.rohanAccusationTriggered);
+                        if ((data.lockerStatus === 'unlocked' || data.diaryUnlocked) && !data.rohanAccusationTriggered) {
+                            console.log("DEBUG: Trigger Condition MET");
+                            // Trigger Rohan's Scripted Interruption
+                            await setDoc(caseRef, { rohanAccusationTriggered: true }, { merge: true });
+
+                            const nameFn = currentUser.displayName ? currentUser.displayName.split(' ')[0] : "Detective";
+
+                            // 1. Initial Interruption
+                            setTimeout(() => addMessage("ai", "ROHAN RATHORE: Lies! I know she was here. I've sent my guys to bring her in. And I'm pulling the CCTV footage right now to prove it!"), 1000);
+
+                            // 2. Accusation
+                            setTimeout(() => addMessage("ai", "ROHAN RATHORE: She killed my Father! Anya killed my Father! She was there!"), 4000);
+
+                            // 3. Pinto's Defense
+                            setTimeout(() => addMessage("ai", `Mrs. Pinto: ${nameFn}, she wasn't even here. How can she kill him? Arjun was sick and stupid. He killed himself. Rohan, if you touch Anya, I will show you who I am.`), 9000);
+
+                            // 4. Rohan's Anger
+                            setTimeout(() => addMessage("ai", "ROHAN RATHORE: I want to see who you are, you sick lady."), 14000);
+
+                            // 5. Final Unlock
+                            setTimeout(async () => {
+                                addMessage("ai", "ROHAN RATHORE: Detective, Anya is here now.  And the CCTV footage is protected. Someone who helped him setup that CCTV might know the code to open it. ");
+                                triggerRohanIntrusion(currentUser.uid);
+                            }, 18000);
+                        }
+                    }
+                } catch (e) { console.error(e); }
+            }
+        }
+    }
+
+    async function checkStoryTriggers(suspectId, uid) {
+        // Triggers are now handled directly in sendMessage interactions or specific event listeners
+        // to ensure scripted timing and avoid race conditions.
     }
 
     async function addMessage(sender, text, save = true) {
@@ -1026,8 +1129,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 cooldownField: 'rohanCooldownUntil',
                 btnId: 'btn-interrogate-rohan',
                 timerId: 'rohan-timer',
-                greeting: (name) => `What is it now, ${name}? I have very little time.`,
-                persona: `You are Rohan Rathore. Wealthy, arrogant, innocent.`
+                greeting: (name) => `What do you want, ${name}? I'm busy.`,
+                persona: `You are Rohan Rathore. Wealthy, arrogant, innocent. Use simple English words. Address the user by their name. If asked about the locker code, say your father once told you it is related to your birth date, which is the 6th. So '06'.`
             },
             vikram: {
                 id: 'vikram',
@@ -1039,8 +1142,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 cooldownField: 'vikramCooldownUntil',
                 btnId: 'btn-interrogate-vikram',
                 timerId: 'vikram-timer',
-                greeting: (name) => `detective. My condolences. I have a business to run.`,
-                persona: `You are Vikram Singh. Real estate dealer. Business-minded.`
+                greeting: (name) => `What is it now? I am not in the mood for games, ${name}.`,
+                persona: `You are Vikram. You are worried about being accused of Arjun's death because you had a 12 crore deal with him. You tried to buy the Blackwood Manor back from Arjun, but he refused, which ruined your plans. You are suspicious to detectives. You had no intention to kill him, but you did scare him a few times. You helped Arjun set up the CCTV, WiFi, and everything else in the manor as part of the deal. Use simple English words. Address the user by their name.`
             },
             seraphina: {
                 id: 'seraphina',
@@ -1052,8 +1155,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 cooldownField: 'seraphinaCooldownUntil',
                 btnId: 'btn-interrogate-seraphina',
                 timerId: 'seraphina-timer',
-                greeting: (name) => `The spirits are agitated today...`,
-                persona: `You are Seraphina. A medium. Cryptic.`
+                greeting: (name) => `The spirits feel your presence, ${name}...`,
+                persona: `You are Seraphina. A medium. Cryptic. Use simple English words. Address the user by their name. If asked about the locker password, say Arjun mentioned someone would come for it. He told you 2 digits, but you are confused if it was '04' or '40'.`
             },
             pinto: {
                 id: 'pinto',
@@ -1065,8 +1168,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 cooldownField: 'pintoCooldownUntil',
                 btnId: 'btn-interrogate-pinto',
                 timerId: 'pinto-timer',
-                greeting: (name) => `This is a private residence. State your business.`,
-                persona: `You are Mrs. Pinto. Housekeeper. Protective of Anya.`
+                greeting: (name) => `This is a private home, ${name}. What do you need?`,
+                persona: `You are Mrs. Pinto. Housekeeper. Protective. Use simple English words. Address the user by their name.`
             },
             anya: {
                 id: 'anya',
@@ -1079,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnId: 'btn-interrogate-anya',
                 timerId: 'anya-timer',
                 greeting: (name) => `I... I didn't see anything!`,
-                persona: `You are Anya Pinto. Student. Terrified. Configured for dynamic CCTV reveal.`
+                persona: `You are Anya Pinto. Student. Scared. Use simple English words. Address the user by their name.`
             },
             solver: {
                 id: 'solver',
@@ -1088,8 +1191,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxQuestions: 20,
                 cooldownMinutes: 0,
                 btnId: 'btn-found-killer',
-                greeting: (name) => `Head of Investigations here. State your findings.`,
-                persona: `You are Head of Investigations. Verify conclusion.`
+                greeting: (name) => `Head of Investigations here. Congratulations for coming this far, ${name}. Who do you think is the killer?`,
+                persona: `You are Head of Investigations. Verify conclusion. Use simple English. Address user by name. Your first goal is to get the name of the killer.`
             }
         },
         getCurrentSuspect: function () { return this.suspects[this.activeSuspect]; },
@@ -1196,15 +1299,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const genAI = new GoogleGenerativeAI(apiKey);
-                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+
+                // Get User Name
+                const nameUser = currentUser && currentUser.displayName ? currentUser.displayName.split(' ')[0] : "Detective";
+
                 let historyContext = "";
                 if (chatHistory && chatHistory.length > 0) {
                     const recent = chatHistory.slice(-6);
-                    historyContext = recent.map(msg => `${msg.sender === 'user' ? 'Detective' : suspect.name}: ${msg.text}`).join('\n');
+                    historyContext = recent.map(msg => `${msg.sender === 'user' ? nameUser : suspect.name}: ${msg.text}`).join('\n');
                 }
-                const prompt = `${suspect.persona} \nConversation History:\n${historyContext}\nDetective: ${input}\n${suspect.name}:`;
+                // Check CCTV Status for Vikram, Anya, and Pinto
+                let systemNote = "";
+
+                try {
+                    const cRef = doc(db, 'users', currentUser.uid, 'caseProgress', 'blackwood-manor-mystery');
+                    const cSnap = await getDoc(cRef);
+                    const data = cSnap.exists() ? cSnap.data() : {};
+                    const isCctvUnlocked = data.cctvUnlocked === true;
+                    const isCctvViewed = data.cctvViewed === true;
+                    const pass = data.cctvPassword || "UNKNOWN";
+
+                    if (suspect.id === 'vikram') {
+                        if (isCctvUnlocked) {
+                            if (!isCctvViewed) {
+                                // Unlocked but not viewed (Red state) - REVEAL PASSWORD
+                                systemNote = `\n[System: The user has found the CCTV file but it is locked. The password is ${pass}. Reveal this number immediately.]`;
+                            } else {
+                                // Unlocked and Viewed (Green state) - Already seen
+                                systemNote = `\n[System: The user has found and watched the CCTV footage. Discuss what was on it.]`;
+                            }
+                        } else {
+                            // Not found yet
+                            systemNote = "\n[System: The user has NOT found the CCTV footage yet. If asked about the CCTV or password, say: 'I can help you with the password, but you have to find the footage first.' You must also assure them: 'You will find it as you progress in the case.' Do NOT reveal the password yet.]";
+                        }
+                    } else if (suspect.id === 'anya') {
+                        if (isCctvUnlocked) {
+                            systemNote = "\n[System: The CCTV is unlocked. YOU ARE SCARED. Admit you were at the house because Pinto asked you to come. Say 'I... I only came because Pinto asked me to! Ask her! I don't know anything else!' Start crying.]";
+                        } else {
+                            systemNote = "\n[System: The CCTV is NOT unlocked. Deny everything. Say you were in Bangalore. You have no idea what they are talking about.]";
+                        }
+                    } else if (suspect.id === 'pinto') {
+                        if (isCctvUnlocked) {
+                            // Rohan Trigger Logic happens in sendMessage, but here we set the tone for confession if prompted
+                            systemNote = `\n[System: The CCTV is unlocked and Rohan has accused Anya. You must CONFESS THE TRUTH to save her. Explain that Arjun was going to publish the truth about your grandmother, Lakshmi, and you tried to stop him. You called Anya only to scare him, but he fell down the stairs by mistake. It was an accident. You did NOT intend to kill him. If asked about the "truth" or "grandmother": Explain that Lakshmi had an affair with Lord Blackwood's wife, Eleanor. Eleanor was killed by the Lord, and the "ghost" story was created to cover up the murder. Arjun was going to expose this and defame the family.]`;
+                        } else {
+                            systemNote = "\n[System: The CCTV is NOT unlocked. You must NEVER speak about Anya's involvement. If asked, strongly deny she was there. Say 'Leave Anya out of this! She is studying in Bangalore.' Be angry that she is even mentioned.]";
+                        }
+                    } else if (suspect.id === 'solver') {
+                        if (!data.killerIdentified) {
+                            const pFound = data.partialPinto;
+                            const aFound = data.partialAnya;
+                            let partialInst = "";
+                            if (pFound && !aFound) {
+                                partialInst = "- USER HAS FOUND PINTO. If they now mention ANYA, start response with '[CORRECT_KILLER]' and ask for Motive. If they say Pinto again, ask 'Who else?'.";
+                            } else if (aFound && !pFound) {
+                                partialInst = "- USER HAS FOUND ANYA. If they now mention PINTO, start response with '[CORRECT_KILLER]' and ask for Motive. If they say Anya again, ask 'Who else?'.";
+                            } else {
+                                partialInst = "- If user mentions ONLY Pinto: Start response with '[FOUND_PINTO]' and say 'Mrs. Pinto was involved, but she didn't act alone. Who was with her?'\n- If user mentions ONLY Anya: Start response with '[FOUND_ANYA]' and say 'Anya was there, but she was called by someone. Who else?'";
+                            }
+
+                            systemNote = `\n[System: You are verifying the Killer identity. The correct answer involves BOTH MRS. PINTO AND ANYA.
+                            - If user says 'Hi', 'Hello', 'Report', or 'I found the killer' (without naming names): Reply 'State the names. Who is responsible?'
+                            ${partialInst}
+                            - If user mentions BOTH (Pinto and Anya): Start response with '[CORRECT_KILLER]', confirm they are right, and IMMEDIATELY ask: 'But why? What was the motive?'.
+                            - If WRONG (e.g. Vikram, Rohan, Stranger): Say 'Evidence does not support that. Review the CCTV.']`;
+                        } else if (!data.motiveIdentified) {
+                            systemNote = "\n[System: Killer identified. Now checking MOTIVE. Correct answer: To protect the secret of grandmother (Lakshmi) / stop Arjun from publishing the truth.\n- If user says 'Secret' or 'Grandmother' vaguely: Ask 'What was the secret regarding the grandmother?'\n- If user mentions 'Affair', 'Lakshmi's secret', 'Book', or 'Exposing truth': Start response with '[CORRECT_MOTIVE]', confirm it, and IMMEDIATELY ask: 'And finally, how exactly did he die?']";
+                        } else {
+                            systemNote = "\n[System: Motive identified. Now checking MODUS OPERANDI. Correct answer: ACCIDENT / Fall from stairs.\n- If user says 'Murder' or 'Killed': Say 'The autopsy suggests otherwise. Was it really intentional?'\n- If user says 'Accident', 'Fall', 'Mistake', 'Stairs': Start response with '[CASE_SOLVED]' and congratulate them.]";
+                        }
+                    }
+                } catch (e) { console.error("Error checking context:", e); }
+
+                const prompt = `${suspect.persona} ${systemNote} \n(System: Do not start your response with your name. Reply directly to the user.)\nConversation History:\n${historyContext}\n${nameUser}: ${input}\n${suspect.name}:`;
                 const result = await model.generateContent(prompt);
-                const responseText = result.response.text();
+                let responseText = result.response.text();
+
+                // Clean up response if it starts with name
+                const namePrefix = `${suspect.name}:`;
+                const wrongPrefix = "Rhan Rathore"; // Handling specific user report
+
+                if (responseText.startsWith(namePrefix)) {
+                    responseText = responseText.substring(namePrefix.length).trim();
+                } else if (responseText.startsWith(suspect.name)) {
+                    responseText = responseText.substring(suspect.name.length).trim();
+                }
+
+                if (responseText.startsWith(wrongPrefix)) {
+                    responseText = responseText.substring(wrongPrefix.length).replace(/^:/, '').trim();
+                }
 
                 // Close chat warning
                 if (suspect.questionCount >= suspect.maxQuestions) {
@@ -1234,14 +1418,90 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p>Time Taken: <span style="color: #fff">${timeString}</span></p>
                 <div class="victory-message" style="opacity: 0; animation: fadeIn 4s ease-in-out forwards 1s;">
                     <p>Thank you, ${userName || 'Detective'}.<br>The manor is at peace.</p>
-                    <div style="margin-top: 20px; padding: 15px; border: 1px dashed var(--accent-gold); background: rgba(0,0,0,0.3);">
-                        <p>Reward Coupon:</p>
+                    <div style="margin-top: 20px; padding: 15px; border: 1px dashed var(--accent-gold); border-radius: 8px; background: rgba(0,0,0,0.3);">
+                        <p style="font-size: 0.9em; margin-bottom: 10px;">Reward Coupon:</p>
                         <span style="font-size: 1.4em; color: var(--accent-gold); font-weight: bold;">${rewardCode || 'N/A'}</span>
                     </div>
-                </div>
-                <button id="return-dash-btn" class="investigate-btn">RETURN TO DASHBOARD</button>
+                <div class="victory-signature" style="margin-top: 20px; font-family: 'Cinzel', serif; color: #888; font-style: italic;">- Rohan Rathore</div>
+                <button id="view-story-btn" style="margin-top: 1.5rem; background: transparent; border: 1px solid var(--accent-gold); color: var(--accent-gold);" class="investigate-btn">VIEW FULL STORY</button>
+                <button id="return-dash-btn" style="margin-top: 1rem;" class="investigate-btn">RETURN TO DASHBOARD</button>
             </div>`;
+
         document.getElementById('return-dash-btn').addEventListener('click', () => window.location.reload());
+
+        const viewStoryBtn = document.getElementById('view-story-btn');
+        if (viewStoryBtn) {
+            viewStoryBtn.addEventListener('click', () => {
+                showFullStory();
+            });
+        }
+    }
+
+    function showFullStory() {
+        const modal = document.querySelector('.case-modal');
+        const overlay = document.getElementById('case-modal-overlay');
+        const header = modal.querySelector('.modal-header h2');
+        const content = modal.querySelector('.modal-content');
+        const actions = modal.querySelector('.modal-actions');
+
+        if (!modal || !overlay) return;
+
+        header.textContent = "The True Scandal of Blackwood Manor";
+        if (actions) actions.style.display = 'none'; // Hide generic buttons
+
+        content.innerHTML = `
+            <div class="story-content" style="color: #ccc; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                <h3 style="color: var(--accent-gold); margin-bottom: 10px;">The True History of Blackwood Manor (1888–2024)</h3>
+
+                <h4 style="color: var(--accent-gold); margin: 20px 0 10px;">1. The Betrayal and the Pact (1888)</h4>
+                <p>Lady Eleanor Blackwood did not love her husband, nor was she merely friends with her maid, Lakshmi. They were lovers in a time and place where such a bond was dangerous. However, the greatest danger wasn't society—it was Lakshmi’s husband, Devan Pinto.</p>
+                <p>Devan, a gardener on the estate, discovered the affair. Humiliated and furious, he went straight to Lord Blackwood. The two men—one a British Lord, the other a local laborer—found common ground in their bruised egos. When they confronted the women in the library, the situation turned violent. In the struggle, Lord Blackwood struck Lakshmi, killing her.</p>
+
+                <h4 style="color: var(--accent-gold); margin: 20px 0 10px;">2. The Great Switch: The "Plague" Cover-Up</h4>
+                <p>Lord Blackwood needed to dispose of the body, and Devan Pinto saw an opportunity for profit. They hatched a plan that would erase the crime and the scandal simultaneously.</p>
+                <ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">
+                    <li><strong>The Body:</strong> Lakshmi’s body was dressed in Lady Eleanor’s finery. Lord Blackwood declared that his wife had contracted the Bubonic Plague. Because of the highly contagious nature of the disease, the casket was sealed immediately. No one was allowed to view the body.</li>
+                    <li><strong>The Funeral:</strong> A grand funeral was held for "Lady Eleanor." In reality, Lakshmi was buried in the Blackwood family crypt, under the name of the woman she loved.</li>
+                    <li><strong>The Exile:</strong> The real Lady Eleanor was smuggled out of the manor under the cover of night. She was put on a ship to Europe with a new identity, stripped of her title and wealth, and threatened that if she ever returned, Devan Pinto would kill her family.</li>
+                    <li><strong>The Cover Story:</strong> To explain Lakshmi’s absence, Devan told the village that his wife had been "promoted" and had traveled to England to serve Lord Blackwood’s family there.</li>
+                </ul>
+
+                <h4 style="color: var(--accent-gold); margin: 20px 0 10px;">3. The Pinto Legacy: Guardians of the Lie</h4>
+                <p>For his silence and cooperation, Devan Pinto was given a massive sum of money and the deed to the land surrounding the manor.</p>
+                <p>The "Ghost of the Lady in White" was not a supernatural occurrence; it was a security system. To ensure no one ever dug too close to the crypt or investigated the manor's history, the Pinto family began a generational tradition of scare tactics. They fabricated the ghost story. Whenever curious locals or developers got too close, a family member would dress in white and stage a "haunting" to drive them away.</p>
+
+                <h4 style="color: var(--accent-gold); margin: 20px 0 10px;">4. Arjun Rathore’s Discovery</h4>
+                <p>Arjun Rathore was a meticulous archivist. He didn't just find a deed; he tracked the paper trail of the exiled Eleanor. He discovered a cache of letters and a diary titled <em>The Silence of Exile</em>, written by Eleanor in her final days in a sanitarium in Switzerland.</p>
+                <p>In these records, Eleanor confessed everything: the love affair, the murder, and the fact that the woman buried in the Blackwood grave was actually Lakshmi. Arjun realized the Pinto family weren't just caretakers; they were the beneficiaries of a century-old blackmail scheme.</p>
+
+                <h4 style="color: var(--accent-gold); margin: 20px 0 10px;">5. The Fatal Confrontation</h4>
+                <p>Arjun returned to the manor, not to look for treasure, but to expose the truth. He requested a meeting with the current patriarch, Pinto (Anya's grandmother).</p>
+                <ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">
+                    <li><strong>The Meeting:</strong> In the main hall, Arjun threw the copies of Eleanor’s diary on the table. He told Pinto that he intended to publish the story and petition to have the Blackwood grave exhumed to prove the body was Lakshmi’s. This would destroy the Pinto family’s reputation and likely strip them of their land rights.</li>
+                    <li><strong>The Setup:</strong> Pinto, too old and frail to physically stop Arjun, became furious. She had anticipated Arjun might be trouble, so she had instructed her granddaughter, Anya, to wait in the shadows upstairs in the "Ghost" costume, just in case they needed to scare the intruder away one last time.</li>
+                </ul>
+
+                <h4 style="color: var(--accent-gold); margin: 20px 0 10px;">6. The Accident</h4>
+                <p>When Arjun turned to leave, declaring he was going to the police, Pinto signaled Anya.</p>
+                <p>The lights were cut. At the top of the grand staircase, Anya stepped out in the billowing white dress, illuminated by a sudden flash of lightning.</p>
+                <p>It was meant to be a simple scare—a theatrical trick to make a superstitious man run away. But Arjun wasn't superstitious; he was startled. He recoiled in shock, his heel caught the edge of the carpet runner on the stairs, and he lost his balance.</p>
+                <p>Arjun tumbled backward down the entire flight of stairs. He snapped his neck upon impact at the bottom. <strong>This was not a murder, but a tragic accident born of a century of lies.</strong></p>
+            </div>
+        `;
+
+        overlay.style.display = 'flex';
+        requestAnimationFrame(() => {
+            overlay.classList.add('active');
+            // Ensure close button works
+            const closeBtn = modal.querySelector('.close-modal');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    overlay.classList.remove('active');
+                    setTimeout(() => overlay.style.display = 'none', 300);
+                }
+            }
+        });
+
     }
 
     async function showPersistentVictoryScreen(uid) {

@@ -164,7 +164,9 @@ body {
     margin-left: var(--sidebar-width);
     /* Offset for fixed sidebar */
     flex-grow: 1;
-    padding: 2rem 3rem;
+    padding: 100px 3rem 2rem 3rem;
+    /* 80px header + 20px gap */
+    /* Adjusted for fixed header */
     width: calc(100% - var(--sidebar-width));
     position: relative;
     z-index: 5;
@@ -174,12 +176,60 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3rem;
-    flex-wrap: wrap;
+    /* margin-bottom removed as it floats */
+    flex-wrap: nowrap;
     gap: 1rem;
-    position: relative;
+
+    position: fixed;
+    /* Sticky behavior */
+    top: 0;
+    left: var(--sidebar-width);
+    /* Start after sidebar */
+    width: calc(100% - var(--sidebar-width));
+    /* Fill remaining width */
+
     z-index: 60;
-    /* Above Escape Room View */
+    height: 80px;
+    padding: 0 2rem;
+    /* Add horizontal padding back */
+
+    background: rgba(5, 5, 5, 0.85);
+    /* Semi-transparent dark */
+    backdrop-filter: blur(10px);
+    /* Glass effect */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    /* Smooth slide */
+}
+
+.page-header.hidden {
+    transform: translateY(-100%);
+    /* Slide up to hide */
+}
+
+/* Standardized Absolute Centering for Logo */
+.page-header .logo-text {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    z-index: 2;
+}
+
+.page-header .header-logo-icon {
+    height: 1.4em;
+    width: auto;
+    vertical-align: middle;
+    margin: 0 8px;
 }
 
 .page-header h1 {
@@ -348,6 +398,13 @@ body {
     padding: 0.6rem;
     border-radius: 8px;
     cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    /* Smooth slide */
+}
+
+.menu-toggle.hidden {
+    transform: translateY(-200%);
+    /* Slide up off screen */
 }
 
 /* Responsive Styles */
@@ -374,9 +431,8 @@ body {
     .main-content {
         margin-left: 0;
         width: 100%;
-        padding: 2rem 1.5rem;
-        padding-top: 5rem;
-        /* Space for toggle */
+        padding: 100px 1.5rem 2rem 1.5rem;
+        /* Top padding for fixed header */
     }
 
     .menu-toggle {
@@ -384,9 +440,26 @@ body {
     }
 
     .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1.5rem;
+        left: 0;
+        /* Full width on mobile */
+        width: 100%;
+        padding: 0 1.5rem;
+        /* Match content padding */
+
+        /* Keep row layout on mobile */
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .page-header .logo-text {
+        font-size: clamp(0.75rem, 4vw, 0.9rem);
+        /* Fluid size: large on modern phones, smaller on tight screens */
+        white-space: nowrap;
+    }
+
+    .page-header .header-logo-icon {
+        margin: 0 4px;
+        /* Tighter spacing */
     }
 
     .search-bar {
@@ -1285,31 +1358,7 @@ body {
 }
 
 /* 2. Header Logo Centered & White */
-.page-header {
-    position: relative;
-    /* For absolute centering */
-    justify-content: space-between;
-    /* Keep other items spread */
-    min-height: 60px;
-    /* Ensure height for absolute item */
-}
-
-.page-header .logo-text {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: max-content;
-
-    /* White Text Styling */
-    color: #fff !important;
-    background: none !important;
-    /* Remove gradient */
-    -webkit-text-fill-color: #fff !important;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5) !important;
-
-    /* Ensure z-index if needed */
-    z-index: 10;
-}
+/* [REMOVED DUPLICATE HEADER STYLES] - Now using global definition at top of file */
 
 /* Adjust Search Bar to not overlap if screen is small */
 .search-bar {
@@ -2353,19 +2402,22 @@ body {
 }
 
 /* Locker Feedback Container (Glassmorphic) */
+/* Locker Feedback Container (Glassmorphic) */
 .locker-feedback-glass {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border-radius: 12px;
-    padding: 1.2rem 1.8rem;
-    margin-top: 1.5rem;
+    padding: 1rem 1.2rem;
+    /* Reduced padding */
+    margin-top: 1rem;
     width: 100%;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 0.5rem;
+    /* Reduced gap */
     align-items: flex-start;
     /* Left align items */
 }
@@ -2376,9 +2428,9 @@ body {
     /* Override default margins */
     text-align: left;
     /* Left align text */
-    font-size: 1rem;
-    /* Increased from 0.85rem */
-    line-height: 1.5;
+    font-size: 0.85rem;
+    /* Reduced for better fit */
+    line-height: 1.4;
 }
 
 .locker-hint {
@@ -2389,8 +2441,8 @@ body {
 
 .locker-info {
     color: #ccc;
-    font-size: 0.95rem;
-    /* Increased from 0.8rem */
+    font-size: 0.85rem;
+    /* Consistent size */
 }
 
 /* CCTV Login Modal */
@@ -2680,4 +2732,86 @@ body {
 /* Ensure no overflow during animation */
 body {
     overflow-x: hidden;
+}
+
+/* --- Force Fix for Locker Modal on Mobile --- */
+@media (max-width: 768px) {
+    .locker-modal {
+        width: 90% !important;
+        max-width: 350px !important;
+        /* Prevent being too wide */
+        max-height: 80vh !important;
+        /* Leave room for header/footer */
+        overflow-y: auto !important;
+        /* Allow scrolling */
+        padding: 1rem !important;
+        /* Reduce padding */
+        margin-top: 4rem;
+        /* Push down from top to avoid header overlap */
+    }
+
+    /* Shrink the Safe Image */
+    .safe-image {
+        width: 150px !important;
+        height: auto;
+    }
+
+    /* Adjust the digital screen on the safe */
+    .safe-screen-container {
+        width: 80px !important;
+        font-size: 0.8rem !important;
+        padding: 2px !important;
+        top: 30% !important;
+        /* Adjust position for smaller image */
+    }
+
+    /* Compact Keypad */
+    .safe-keypad {
+        padding: 0.5rem !important;
+        gap: 5px !important;
+    }
+
+    .key-btn {
+        padding: 8px !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Ensure Close Button is visible and clickable */
+    #close-locker-btn {
+        position: absolute !important;
+        top: 5px !important;
+        right: 5px !important;
+        background: rgba(0, 0, 0, 0.5);
+        /* Background to make it pop */
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100 !important;
+    }
+}
+/* --- Force Fix for Mobile Viewport Issues (iOS) --- */
+@media (max-width: 768px) {
+    /* 1. Prevent Auto-Zoom on Inputs (iOS requires 16px) */
+    #chat-input, 
+    input[type="text"],
+    input[type="password"] {
+        font-size: 16px !important; 
+    }
+
+    /* 2. Sidebar Height Fix (Browser Chrome Aware) */
+    .sidebar {
+        height: 100vh; /* Fallback */
+        height: 100dvh !important; /* Dynamic Viewport Height */
+        padding-bottom: 120px; /* Ensure logout button is reachable above address bar */
+        overflow-y: auto; /* scrollable if needed */
+    }
+
+    /* Ensure close button is reachable */
+    .close-menu {
+        top: 20px !important;
+        right: 20px !important;
+    }
 }

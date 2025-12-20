@@ -56,6 +56,7 @@ export async function loginWithGoogle() {
         const result = await signInWithPopup(auth, googleProvider);
         return { success: true, user: result.user };
     } catch (error) {
+        console.error("Google Sign-In Error:", error.code, error.message);
         return { success: false, error: error.message };
     }
 }
