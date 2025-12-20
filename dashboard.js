@@ -2,7 +2,7 @@ import { monitorAuthState, logoutUser, db, doc, getDoc, setDoc, updateDoc, serve
 import { fetchAgents } from './agents.js';
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-document.addEventListener('DOMContentLoaded', () => {
+const initApp = () => {
     let currentUser = null;
 
     // Auth Protection
@@ -15,12 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 // User is logged in
                 console.log("Authorized access:", user.email);
                 currentUser = user;
-                updateUserProfile(user);
-                await checkBlackwoodProgress(user.uid);
-                await checkLockerStatus(user.uid);
-                if (typeof aiManager !== 'undefined') {
-                    await aiManager.checkCooldowns(user.uid);
-                }
+                // Robust profile update
+                try {
+                    await updateUserProfile(user);
+                } catch (e) { console.error("Profile update failed", e); }
+
+                try {
+                    await checkBlackwoodProgress(user.uid);
+                    await checkLockerStatus(user.uid);
+                    if (typeof aiManager !== 'undefined') {
+                        await aiManager.checkCooldowns(user.uid);
+                    }
+                } catch (e) { console.error("Progress check failed", e); }
             },
             () => {
                 // No user and NOT on index.html -> Redirect
@@ -114,27 +120,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateUserProfile(user) {
         const nameEl = document.querySelector('.user-info .name');
-        const emailEl = document.querySelector('.user-info .status');
+        const emailEl = document.querySelector('.user-info .status'); // Keeping selector but logic might need adjustment if status is not email
         const avatarEl = document.querySelector('.avatar');
 
-        if (user.displayName) {
-            nameEl.textContent = user.displayName;
-        } else {
-            try {
-                const profileRef = doc(db, 'users', user.uid, 'investigatorProfile', user.uid);
-                const profileSnap = await getDoc(profileRef);
-                if (profileSnap.exists()) {
-                    const data = profileSnap.data();
-                    if (data.name) nameEl.textContent = data.name;
+        if (nameEl) {
+            if (user.displayName) {
+                nameEl.textContent = user.displayName;
+            } else {
+                nameEl.textContent = "Loading..."; // Feedback
+                try {
+                    // Fallback to Firestore profile
+                    const profileRef = doc(db, 'users', user.uid, 'investigatorProfile', user.uid);
+                    const profileSnap = await getDoc(profileRef);
+                    if (profileSnap.exists()) {
+                        const data = profileSnap.data();
+                        if (data.name) nameEl.textContent = data.name;
+                        else nameEl.textContent = "Detective";
+                    } else {
+                        nameEl.textContent = "Detective";
+                    }
+                } catch (e) {
+                    console.error("Error fetching profile name:", e);
+                    nameEl.textContent = "Detective";
                 }
-            } catch (e) {
-                console.error("Error fetching profile name:", e);
-                nameEl.textContent = "Detective";
             }
         }
 
-        if (user.email) emailEl.textContent = user.email;
-        if (user.photoURL) {
+        if (emailEl && user.email) {
+            // Often status is "Level 5" etc, but if we want email:
+            // emailEl.textContent = user.email; 
+            // Leaving original logic but adding safety
+            // emailEl.textContent = user.email; 
+        }
+
+        if (avatarEl && user.photoURL) {
             avatarEl.style.backgroundImage = `url('${user.photoURL}')`;
             avatarEl.style.backgroundSize = 'cover';
         }
@@ -306,12 +325,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const blackwoodBtn = document.querySelector('.case-card:first-child .investigate-btn');
 
     if (blackwoodBtn) {
-        blackwoodBtn.addEventListener('click', () => {
-            const status = blackwoodBtn.dataset.status;
+        // Remove old listeners to be safe handled by GC usually but standardizing
+        blackwoodBtn.replaceWith(blackwoodBtn.cloneNode(true));
+        const newBlackwoodBtn = document.querySelector('.case-card:first-child .investigate-btn');
+
+        newBlackwoodBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Safety
+            const status = newBlackwoodBtn.dataset.status;
 
             if (status === 'closed') {
                 if (currentUser) {
                     showPersistentVictoryScreen(currentUser.uid);
+                } else {
+                    alert("Please log in to view case details.");
                 }
             } else if (status === 'in-progress') {
                 window.location.href = 'case-blackwood.html';
@@ -320,6 +346,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 openModal();
             }
         });
+    } else {
+        console.warn("Investigate button not found in DOM");
     }
 
     function openModal() {
@@ -441,15 +469,22 @@ document.addEventListener('DOMContentLoaded', () => {
         acceptCaseBtn.addEventListener('click', async () => {
             if (currentUser) {
                 acceptCaseBtn.innerText = "Initializing...";
-                await initializeCaseProgress(currentUser.uid);
+                try {
+                    await initializeCaseProgress(currentUser.uid);
 
-                if (blackwoodBtn) {
-                    blackwoodBtn.textContent = "OPEN CASE";
-                    blackwoodBtn.dataset.status = 'in-progress';
+                    const blackwoodBtn = document.querySelector('.case-card:first-child .investigate-btn');
+                    if (blackwoodBtn) {
+                        blackwoodBtn.textContent = "OPEN CASE";
+                        blackwoodBtn.dataset.status = 'in-progress';
+                    }
+
+                    closeModal();
+                    window.location.href = 'case-blackwood.html';
+                } catch (e) {
+                    console.error("Accept case failed", e);
+                    acceptCaseBtn.innerText = "Accept Case"; // Reset
+                    alert("Failed to initialize case. Please try again.");
                 }
-
-                closeModal();
-                window.location.href = 'case-blackwood.html';
             }
         });
     }
@@ -1017,17 +1052,40 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.includes('[CORRECT_KILLER]')) {
                 await setDoc(caseRef, { killerIdentified: true }, { merge: true });
                 response = response.replace('[CORRECT_KILLER]', '').trim();
-            } else if (response.includes('[FOUND_PINTO]')) {
-                await setDoc(caseRef, { partialPinto: true }, { merge: true });
-                response = response.replace('[FOUND_PINTO]', '').trim();
             } else if (response.includes('[FOUND_ANYA]')) {
                 await setDoc(caseRef, { partialAnya: true }, { merge: true });
                 response = response.replace('[FOUND_ANYA]', '').trim();
+                if (!response) response = "Anya was there, but she didn't act alone. Who else?";
+            } else if (response.includes('[FOUND_PINTO]')) {
+                await setDoc(caseRef, { partialPinto: true }, { merge: true });
+                response = response.replace('[FOUND_PINTO]', '').trim();
+                if (!response) response = "Mrs. Pinto was involved, but she didn't act alone. Who was with her?";
             } else if (response.includes('[CORRECT_MOTIVE]')) {
                 await setDoc(caseRef, { motiveIdentified: true }, { merge: true });
                 response = response.replace('[CORRECT_MOTIVE]', '').trim();
             } else if (response.includes('[CASE_SOLVED]')) {
-                await setDoc(caseRef, { modusOperandiIdentified: true, caseClosed: true }, { merge: true });
+                // Calculate Time Taken
+                let timeString = "00h 00m";
+                let rewardCode = "BW-" + Math.floor(1000 + Math.random() * 9000).toString();
+                try {
+                    const start = data.caseStartTime ? data.caseStartTime.toDate() : new Date();
+                    const end = new Date();
+                    const diffMs = end - start;
+                    const diffHrs = Math.floor(diffMs / 3600000);
+                    const diffMins = Math.floor((diffMs % 3600000) / 60000);
+                    timeString = `${diffHrs}h ${diffMins}m`;
+                } catch (e) { console.error("Time calc error", e); }
+
+                await setDoc(caseRef, {
+                    modusOperandiIdentified: true,
+                    caseClosed: true,
+                    completedAt: serverTimestamp(),
+                    timeTaken: timeString,
+                    rewardCode: rewardCode
+                }, { merge: true });
+
+                victoryData = { time: timeString, name: currentUser.displayName, rewardCode: rewardCode };
+
                 response = response.replace('[CASE_SOLVED]', '').trim();
                 markBlackwoodClosed();
                 triggerVictorySequence();
@@ -1191,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxQuestions: 20,
                 cooldownMinutes: 0,
                 btnId: 'btn-found-killer',
-                greeting: (name) => `Head of Investigations here. Congratulations for coming this far, ${name}. Who do you think is the killer?`,
+                greeting: (name) => `Head of Investigations here. Congratulations on coming this far, ${name}. Who do you think is the killer?`,
                 persona: `You are Head of Investigations. Verify conclusion. Use simple English. Address user by name. Your first goal is to get the name of the killer.`
             }
         },
@@ -1352,9 +1410,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             const aFound = data.partialAnya;
                             let partialInst = "";
                             if (pFound && !aFound) {
-                                partialInst = "- USER HAS FOUND PINTO. If they now mention ANYA, start response with '[CORRECT_KILLER]' and ask for Motive. If they say Pinto again, ask 'Who else?'.";
+                                partialInst = "- STATUS: User found Pinto. GOAL: Get 'Anya'.\n- If user says 'Anya', 'Girl', 'Student': Start response with '[CORRECT_KILLER]', confirm case is solved, and ask for Motive.\n- If user repeats 'Pinto': Say 'Yes, Pinto is one. Who is the accomplice?'";
                             } else if (aFound && !pFound) {
-                                partialInst = "- USER HAS FOUND ANYA. If they now mention PINTO, start response with '[CORRECT_KILLER]' and ask for Motive. If they say Anya again, ask 'Who else?'.";
+                                partialInst = "- STATUS: User found Anya. GOAL: Get 'Pinto'.\n- If user says 'Pinto', 'Housekeeper', 'Old woman', 'Mrs Pinto': Start response with '[CORRECT_KILLER]', confirm case is solved, and ask for Motive.\n- If user repeats 'Anya': Say 'Yes, Anya is one. Who is the accomplice?'";
                             } else {
                                 partialInst = "- If user mentions ONLY Pinto: Start response with '[FOUND_PINTO]' and say 'Mrs. Pinto was involved, but she didn't act alone. Who was with her?'\n- If user mentions ONLY Anya: Start response with '[FOUND_ANYA]' and say 'Anya was there, but she was called by someone. Who else?'";
                             }
@@ -1363,11 +1421,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             - If user says 'Hi', 'Hello', 'Report', or 'I found the killer' (without naming names): Reply 'State the names. Who is responsible?'
                             ${partialInst}
                             - If user mentions BOTH (Pinto and Anya): Start response with '[CORRECT_KILLER]', confirm they are right, and IMMEDIATELY ask: 'But why? What was the motive?'.
-                            - If WRONG (e.g. Vikram, Rohan, Stranger): Say 'Evidence does not support that. Review the CCTV.']`;
+                            - If input matches NONE of the above (e.g. Vikram, Rohan, Stranger): Say 'Evidence does not support that. Review the CCTV.']`;
                         } else if (!data.motiveIdentified) {
-                            systemNote = "\n[System: Killer identified. Now checking MOTIVE. Correct answer: To protect the secret of grandmother (Lakshmi) / stop Arjun from publishing the truth.\n- If user says 'Secret' or 'Grandmother' vaguely: Ask 'What was the secret regarding the grandmother?'\n- If user mentions 'Affair', 'Lakshmi's secret', 'Book', or 'Exposing truth': Start response with '[CORRECT_MOTIVE]', confirm it, and IMMEDIATELY ask: 'And finally, how exactly did he die?']";
+                            systemNote = "\n[System: Killer identified. Now checking MOTIVE. Correct answer: To protect the secret of grandmother (Lakshmi) / stop Arjun from publishing the truth.\n- If user says 'Secret' or 'Grandmother' vaguely: Ask 'What was the secret regarding the grandmother?'\n- If user mentions 'Affair', 'Lakshmi's secret', 'Book', or 'Exposing truth': Start response with '[CORRECT_MOTIVE]', confirm it, and IMMEDIATELY ask: 'And finally, how exactly did he die?'\n- If WRONG (e.g. Money, Hate, Jealousy, Stabbed): Say 'Evidence does not support that. Why was he really killed?']";
                         } else {
-                            systemNote = "\n[System: Motive identified. Now checking MODUS OPERANDI. Correct answer: ACCIDENT / Fall from stairs.\n- If user says 'Murder' or 'Killed': Say 'The autopsy suggests otherwise. Was it really intentional?'\n- If user says 'Accident', 'Fall', 'Mistake', 'Stairs': Start response with '[CASE_SOLVED]' and congratulate them.]";
+                            systemNote = "\n[System: Motive identified. Now checking MODUS OPERANDI. Correct answer: ACCIDENT / Fall from stairs.\n- If user says 'Accident', 'Fall', 'Mistake', 'Stairs': Start response with '[CASE_SOLVED]' and congratulate them.\n- If WRONG (e.g. Murder, Killed, Stabbed, Poison, Gun): Say 'The autopsy suggests otherwise. Was it really intentional?']";
                         }
                     }
                 } catch (e) { console.error("Error checking context:", e); }
@@ -1535,4 +1593,12 @@ document.addEventListener('DOMContentLoaded', () => {
             renderVictoryTile(mainContainer, victoryData.time, victoryData.name, victoryData.rewardCode);
         }, 3000);
     }
+};
+
+// Initialize App safely dealing with Module timing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
 });
