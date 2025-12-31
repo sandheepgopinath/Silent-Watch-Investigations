@@ -1,8 +1,8 @@
 import { monitorAuthState, logoutUser, db, doc, getDoc, setDoc, updateDoc, serverTimestamp, arrayUnion } from './auth.js';
-import { fetchAgents } from './agents.js';
+import { fetchAgents } from './agents_core.js';
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-const initApp = () => {
+document.addEventListener('DOMContentLoaded', () => {
     let currentUser = null;
 
     // Auth Protection
@@ -15,18 +15,12 @@ const initApp = () => {
                 // User is logged in
                 console.log("Authorized access:", user.email);
                 currentUser = user;
-                // Robust profile update
-                try {
-                    await updateUserProfile(user);
-                } catch (e) { console.error("Profile update failed", e); }
-
-                try {
-                    await checkBlackwoodProgress(user.uid);
-                    await checkLockerStatus(user.uid);
-                    if (typeof aiManager !== 'undefined') {
-                        await aiManager.checkCooldowns(user.uid);
-                    }
-                } catch (e) { console.error("Progress check failed", e); }
+                updateUserProfile(user);
+                await checkBlackwoodProgress(user.uid);
+                await checkLockerStatus(user.uid);
+                if (typeof aiManager !== 'undefined') {
+                    await aiManager.checkCooldowns(user.uid);
+                }
             },
             () => {
                 // No user and NOT on index.html -> Redirect
@@ -120,40 +114,27 @@ const initApp = () => {
 
     async function updateUserProfile(user) {
         const nameEl = document.querySelector('.user-info .name');
-        const emailEl = document.querySelector('.user-info .status'); // Keeping selector but logic might need adjustment if status is not email
+        const emailEl = document.querySelector('.user-info .status');
         const avatarEl = document.querySelector('.avatar');
 
-        if (nameEl) {
-            if (user.displayName) {
-                nameEl.textContent = user.displayName;
-            } else {
-                nameEl.textContent = "Loading..."; // Feedback
-                try {
-                    // Fallback to Firestore profile
-                    const profileRef = doc(db, 'users', user.uid, 'investigatorProfile', user.uid);
-                    const profileSnap = await getDoc(profileRef);
-                    if (profileSnap.exists()) {
-                        const data = profileSnap.data();
-                        if (data.name) nameEl.textContent = data.name;
-                        else nameEl.textContent = "Detective";
-                    } else {
-                        nameEl.textContent = "Detective";
-                    }
-                } catch (e) {
-                    console.error("Error fetching profile name:", e);
-                    nameEl.textContent = "Detective";
+        if (user.displayName) {
+            nameEl.textContent = user.displayName;
+        } else {
+            try {
+                const profileRef = doc(db, 'users', user.uid, 'investigatorProfile', user.uid);
+                const profileSnap = await getDoc(profileRef);
+                if (profileSnap.exists()) {
+                    const data = profileSnap.data();
+                    if (data.name) nameEl.textContent = data.name;
                 }
+            } catch (e) {
+                console.error("Error fetching profile name:", e);
+                nameEl.textContent = "Detective";
             }
         }
 
-        if (emailEl && user.email) {
-            // Often status is "Level 5" etc, but if we want email:
-            // emailEl.textContent = user.email; 
-            // Leaving original logic but adding safety
-            // emailEl.textContent = user.email; 
-        }
-
-        if (avatarEl && user.photoURL) {
+        if (user.email) emailEl.textContent = user.email;
+        if (user.photoURL) {
             avatarEl.style.backgroundImage = `url('${user.photoURL}')`;
             avatarEl.style.backgroundSize = 'cover';
         }
@@ -323,31 +304,188 @@ const initApp = () => {
     const acceptCaseBtn = document.getElementById('accept-case');
 
     const blackwoodBtn = document.querySelector('.case-card:first-child .investigate-btn');
+    const voicelessBtn = document.getElementById('btn-voiceless');
 
     if (blackwoodBtn) {
-        // Remove old listeners to be safe handled by GC usually but standardizing
-        blackwoodBtn.replaceWith(blackwoodBtn.cloneNode(true));
-        const newBlackwoodBtn = document.querySelector('.case-card:first-child .investigate-btn');
-
-        newBlackwoodBtn.addEventListener('click', (e) => {
-            e.preventDefault(); // Safety
-            const status = newBlackwoodBtn.dataset.status;
+        blackwoodBtn.addEventListener('click', () => {
+            const status = blackwoodBtn.dataset.status;
 
             if (status === 'closed') {
                 if (currentUser) {
                     showPersistentVictoryScreen(currentUser.uid);
-                } else {
-                    alert("Please log in to view case details.");
                 }
             } else if (status === 'in-progress') {
                 window.location.href = 'case-blackwood.html';
             } else {
                 restoreBriefModal();
+                if (acceptCaseBtn) acceptCaseBtn.dataset.target = 'blackwood';
                 openModal();
             }
         });
-    } else {
-        console.warn("Investigate button not found in DOM");
+    }
+
+    // Generic Password Modal Logic (Reused for Case Access)
+    function showPasswordPrompt(callback) {
+        // Check if exists, else create
+        let pwdModal = document.getElementById('access-pwd-modal');
+        if (!pwdModal) {
+            pwdModal = document.createElement('div');
+            pwdModal.id = 'access-pwd-modal';
+            pwdModal.className = 'modal-overlay';
+            pwdModal.innerHTML = `
+                <div class="auth-card" style="width: 380px; padding: 2.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); border-radius: 16px; text-align: center;">
+                    <div style="margin-bottom: 1.5rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 15px rgba(0, 240, 255, 0.3);">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <h2 style="color: #fff; font-family: 'Cinzel', serif; margin-bottom: 0.5rem; font-weight: 400; letter-spacing: 1px;">Security Breach Detected</h2>
+                    <p style="color: #aaa; margin-bottom: 2rem; font-size: 0.85rem; line-height: 1.5;">Level 5 Clearance Required.<br>Enter authorized credentials to proceed.</p>
+                    
+                    <div class="input-group" style="margin-bottom: 1.5rem; position: relative;">
+                        <input type="password" id="access-pwd-input" placeholder="ACCESS CODE" 
+                            style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--accent-cyan); text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 1.1rem; letter-spacing: 3px; border-radius: 8px; outline: none; transition: all 0.3s;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button id="access-pwd-cancel" style="flex: 1; padding: 10px; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #888; border-radius: 8px; cursor: pointer; transition: all 0.3s;">CANCEL</button>
+                        <button id="access-pwd-submit" style="flex: 1; padding: 10px; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);">AUTHENTICATE</button>
+                    </div>
+                    
+                    <p id="access-pwd-error" style="color: #ff4d4d; font-size: 0.8rem; margin-top: 15px; min-height: 1.2em; font-family: monospace;"></p>
+                </div>
+            `;
+            document.body.appendChild(pwdModal);
+
+            // Event Listeners for the new modal
+            const submitBtn = pwdModal.querySelector('#access-pwd-submit');
+            const cancelBtn = pwdModal.querySelector('#access-pwd-cancel');
+            const input = pwdModal.querySelector('#access-pwd-input');
+            const error = pwdModal.querySelector('#access-pwd-error');
+
+            const submitHandler = () => {
+                if (input.value === 'swadmins123') {
+                    submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> AUTHENTICATING...';
+                    submitBtn.disabled = true;
+                    input.disabled = true;
+
+                    // Pass a function to close/reset the modal to the callback
+                    // So the callback decides when/if to close it (e.g. not if redirecting)
+                    const closeAndReset = () => {
+                        pwdModal.style.display = 'none';
+                        input.value = '';
+                        error.textContent = '';
+                        submitBtn.innerHTML = 'AUTHENTICATE';
+                        submitBtn.disabled = false;
+                        input.disabled = false;
+                    };
+
+
+                    // Use the stored callback
+                    if (pwdModal._authCallback) {
+                        pwdModal._authCallback(closeAndReset);
+                    }
+
+                } else {
+                    error.textContent = 'ACCESS DENIED: Invalid Passcode';
+                    input.classList.add('shake');
+                    setTimeout(() => input.classList.remove('shake'), 500);
+                }
+            };
+
+            submitBtn.addEventListener('click', submitHandler);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitHandler();
+            });
+            cancelBtn.addEventListener('click', () => {
+                pwdModal.style.display = 'none';
+                input.value = '';
+                error.textContent = '';
+            });
+        }
+
+        // Update the callback reference every time the modal is shown
+        pwdModal._authCallback = callback;
+
+        pwdModal.style.display = 'flex';
+        setTimeout(() => pwdModal.querySelector('input').focus(), 100);
+    }
+
+    if (voicelessBtn) {
+        voicelessBtn.addEventListener('click', async () => {
+            showPasswordPrompt(async (closeAuthModal) => {
+                // Check if case already started
+                let isAlreadyActive = false;
+                if (currentUser) {
+                    try {
+                        const caseRef = doc(db, 'users', currentUser.uid, 'caseProgress', 'voiceles-caller');
+                        const caseSnap = await getDoc(caseRef);
+                        if (caseSnap.exists()) {
+                            isAlreadyActive = true;
+                        }
+                    } catch (e) {
+                        console.error("Error checking voiceless progress", e);
+                    }
+                }
+
+                if (isAlreadyActive) {
+                    window.location.href = 'case-voiceless.html';
+                    // Do NOT close the modal, let the redirect happen while loading
+                } else {
+                    // Start New: Insert Voiceless Caller Brief
+                    // For this path, we DO close the auth modal to show the brief modal
+                    // Start New: Insert Voiceless Caller Brief
+                    // For this path, we DO close the auth modal to show the brief modal
+                    // BUT we do it AFTER opening the new modal to prevent flashing
+                    // closeAuthModal(); // Moved down 
+
+
+                    if (modalContentContainer) {
+                        modalContentContainer.innerHTML = `
+                            <div class="case-meta">
+                                <span class="case-id" style="color: var(--accent-cyan); border-color: var(--accent-cyan)">Case File: #002</span>
+                                <span class="case-title">The Voiceless Caller</span>
+                            </div>
+
+                            <div class="brief-section">
+                                <h3><i class="fas fa-signal"></i> Alert Type</h3>
+                                <p><strong>Priority 1 Distress Signal</strong> via Emergency Broadcast Frequencies.</p>
+                            </div>
+
+                            <div class="brief-section">
+                                <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
+                                <p>Triangulated to <strong>Greater Cochin Area</strong>. Specific coordinates unstable.</p>
+                            </div>
+
+                            <div class="brief-section">
+                                <h3><i class="fas fa-file-audio"></i> Background</h3>
+                                <p>Control room has been receiving intermittent silent calls and erratic SOS beacons for the past 48 hours. Intelligence suggests a pattern targeting emergency responder frequencies.</p>
+                            </div>
+
+                            <div class="brief-section">
+                                <h3><i class="fas fa-crosshairs"></i> Mission</h3>
+                                <p>1. Assume command of <strong>Unit Beta-1</strong> (Ground Response).<br>
+                                2. Track and locate the signal source.<br>
+                                3. Investigate potential threats.</p>
+                            </div>
+
+                            <div class="alert-box" style="border-left-color: var(--accent-amber)">
+                                <h4 style="color: var(--accent-amber)"><i class="fas fa-exclamation-circle"></i> Protocol</h4>
+                                <p>Expect hostility. Maintain constant communication with the ground team.</p>
+                            </div>
+                        `;
+                        if (modalTitle) modalTitle.textContent = "Mission Briefing";
+                        if (modalActionsContainer) modalActionsContainer.style.display = 'flex';
+                        if (acceptCaseBtn) acceptCaseBtn.dataset.target = 'voiceless';
+
+                        // Open the briefing modal FIRST
+                        openModal();
+
+                        // THEN close the auth modal (loading state) after a short delay or immediately
+                        // Closing immediately might show a z-index glitch, but better than dashboard flash
+                        closeAuthModal();
+                    }
+                }
+            });
+        });
     }
 
     function openModal() {
@@ -402,6 +540,27 @@ const initApp = () => {
             }
         } catch (error) {
             console.error("Error creating case entry:", error);
+            alert("Secure Connection Failed. Please try again.");
+        }
+    }
+
+    async function initializeVoicelessProgress(uid) {
+        try {
+            const caseRef = doc(db, 'users', uid, 'caseProgress', 'voiceles-caller');
+            const caseSnap = await getDoc(caseRef);
+
+            if (!caseSnap.exists()) {
+                await setDoc(caseRef, {
+                    caseId: "voiceles-caller",
+                    userId: uid,
+                    caseAccepted: true,
+                    caseStartTime: serverTimestamp(),
+                    lastUpdated: serverTimestamp(),
+                    stage: 'IDLE' // Initial stage
+                });
+            }
+        } catch (error) {
+            console.error("Error creating voiceless case entry:", error);
             alert("Secure Connection Failed. Please try again.");
         }
     }
@@ -467,23 +626,20 @@ const initApp = () => {
 
     if (acceptCaseBtn) {
         acceptCaseBtn.addEventListener('click', async () => {
+            const target = acceptCaseBtn.dataset.target;
             if (currentUser) {
-                acceptCaseBtn.innerText = "Initializing...";
-                try {
+                closeModal();
+                if (target === 'blackwood') {
+                    // acceptCaseBtn.innerText = "Initializing..."; // Removed as per instruction
                     await initializeCaseProgress(currentUser.uid);
-
-                    const blackwoodBtn = document.querySelector('.case-card:first-child .investigate-btn');
-                    if (blackwoodBtn) {
-                        blackwoodBtn.textContent = "OPEN CASE";
-                        blackwoodBtn.dataset.status = 'in-progress';
-                    }
-
-                    closeModal();
+                    // if (blackwoodBtn) { // Removed as per instruction
+                    //     blackwoodBtn.textContent = "OPEN CASE";
+                    //     blackwoodBtn.dataset.status = 'in-progress';
+                    // }
                     window.location.href = 'case-blackwood.html';
-                } catch (e) {
-                    console.error("Accept case failed", e);
-                    acceptCaseBtn.innerText = "Accept Case"; // Reset
-                    alert("Failed to initialize case. Please try again.");
+                } else if (target === 'voiceless') {
+                    await initializeVoicelessProgress(currentUser.uid);
+                    window.location.href = 'case-voiceless.html';
                 }
             }
         });
@@ -1068,7 +1224,10 @@ const initApp = () => {
                 let timeString = "00h 00m";
                 let rewardCode = "BW-" + Math.floor(1000 + Math.random() * 9000).toString();
                 try {
-                    const start = data.caseStartTime ? data.caseStartTime.toDate() : new Date();
+                    const caseSnap = await getDoc(caseRef);
+                    const caseData = caseSnap.exists() ? caseSnap.data() : {};
+
+                    const start = caseData.caseStartTime ? caseData.caseStartTime.toDate() : new Date();
                     const end = new Date();
                     const diffMs = end - start;
                     const diffHrs = Math.floor(diffMs / 3600000);
@@ -1088,6 +1247,8 @@ const initApp = () => {
 
                 response = response.replace('[CASE_SOLVED]', '').trim();
                 markBlackwoodClosed();
+                const btnSolver = document.getElementById('btn-found-killer');
+                if (btnSolver) btnSolver.style.display = 'none';
                 triggerVictorySequence();
             }
         }
@@ -1250,7 +1411,7 @@ const initApp = () => {
                 cooldownMinutes: 0,
                 btnId: 'btn-found-killer',
                 greeting: (name) => `Head of Investigations here. Congratulations on coming this far, ${name}. Who do you think is the killer?`,
-                persona: `You are Head of Investigations. Verify conclusion. Use simple English. Address user by name. Your first goal is to get the name of the killer.`
+                persona: `You are Head of Investigations. Verify conclusion. Use simple English. Address user by name.`
             }
         },
         getCurrentSuspect: function () { return this.suspects[this.activeSuspect]; },
@@ -1408,24 +1569,60 @@ const initApp = () => {
                         if (!data.killerIdentified) {
                             const pFound = data.partialPinto;
                             const aFound = data.partialAnya;
-                            let partialInst = "";
-                            if (pFound && !aFound) {
-                                partialInst = "- STATUS: User found Pinto. GOAL: Get 'Anya'.\n- If user says 'Anya', 'Girl', 'Student': Start response with '[CORRECT_KILLER]', confirm case is solved, and ask for Motive.\n- If user repeats 'Pinto': Say 'Yes, Pinto is one. Who is the accomplice?'";
-                            } else if (aFound && !pFound) {
-                                partialInst = "- STATUS: User found Anya. GOAL: Get 'Pinto'.\n- If user says 'Pinto', 'Housekeeper', 'Old woman', 'Mrs Pinto': Start response with '[CORRECT_KILLER]', confirm case is solved, and ask for Motive.\n- If user repeats 'Anya': Say 'Yes, Anya is one. Who is the accomplice?'";
-                            } else {
-                                partialInst = "- If user mentions ONLY Pinto: Start response with '[FOUND_PINTO]' and say 'Mrs. Pinto was involved, but she didn't act alone. Who was with her?'\n- If user mentions ONLY Anya: Start response with '[FOUND_ANYA]' and say 'Anya was there, but she was called by someone. Who else?'";
-                            }
 
-                            systemNote = `\n[System: You are verifying the Killer identity. The correct answer involves BOTH MRS. PINTO AND ANYA.
-                            - If user says 'Hi', 'Hello', 'Report', or 'I found the killer' (without naming names): Reply 'State the names. Who is responsible?'
-                            ${partialInst}
-                            - If user mentions BOTH (Pinto and Anya): Start response with '[CORRECT_KILLER]', confirm they are right, and IMMEDIATELY ask: 'But why? What was the motive?'.
-                            - If input matches NONE of the above (e.g. Vikram, Rohan, Stranger): Say 'Evidence does not support that. Review the CCTV.']`;
+                            systemNote = `\n[System: You are verifying the Killer identity.
+                            CURRENT STATUS (Database): Pinto Found: ${pFound}. Anya Found: ${aFound}.
+                            GOAL: The user must identify BOTH "Mrs. Pinto" AND "Anya".
+                            
+                            INSTRUCTIONS:
+                            1. CRITICAL: Check the "Conversation History" below.
+                               - If we have ALREADY discussed/confirmed "Pinto" in previous messages, treat "Pinto Found" as TRUE (ignore the Database Status if it says False).
+                               - If we have ALREADY discussed/confirmed "Anya" in previous messages, treat "Anya Found" as TRUE.
+                            
+                            2. If the user mentions "Pinto" (or Housekeeper):
+                               - If "Anya" is found (per Database OR History) OR if user ALSO mentions "Anya" in this message:
+                                 Output: '[CORRECT_KILLER] Correct. It was both of them.' then ask: "But why? What was the motive?"
+                               - If "Anya" is NOT found:
+                                 Output: '[FOUND_PINTO] Mrs. Pinto was involved, yes. But she didn't act alone. Who was with her?'
+                            
+                            3. If the user mentions "Anya" (or Granddaughter/Girl):
+                               - If "Pinto" is found (per Database OR History) OR if user ALSO mentions "Pinto" in this message:
+                                 Output: '[CORRECT_KILLER] Correct. It was both of them.' then ask: "But why? What was the motive?"
+                               - If "Pinto" is NOT found:
+                                 Output: '[FOUND_ANYA] Anya was present, yes. But she was called by someone. Who called her?'
+                            
+                            4. If the user mentions NEITHER or guesses wrong (Vikram, Rohan, etc.):
+                               Say "Evidence does not support that. Who was seen on the CCTV? Who had the most to lose?"
+                            
+                            CRITICAL: You MUST include the tags [FOUND_PINTO], [FOUND_ANYA], or [CORRECT_KILLER] at the start of your response if the condition is met. Do NOT omit them.
+                            ]`;
                         } else if (!data.motiveIdentified) {
-                            systemNote = "\n[System: Killer identified. Now checking MOTIVE. Correct answer: To protect the secret of grandmother (Lakshmi) / stop Arjun from publishing the truth.\n- If user says 'Secret' or 'Grandmother' vaguely: Ask 'What was the secret regarding the grandmother?'\n- If user mentions 'Affair', 'Lakshmi's secret', 'Book', or 'Exposing truth': Start response with '[CORRECT_MOTIVE]', confirm it, and IMMEDIATELY ask: 'And finally, how exactly did he die?'\n- If WRONG (e.g. Money, Hate, Jealousy, Stabbed): Say 'Evidence does not support that. Why was he really killed?']";
+                            systemNote = `\n[System: Killer identified. Now checking MOTIVE. 
+                            THE TRUTH: Arjun discovered the "Ghost" was fake. Eleanor is alive in Europe. The grave holds Lakshmi (murdered by Lord Blackwood). Arjun was going to publish this/open a resort.
+                            
+                            INSTRUCTIONS:
+                            - CHECK FOR MEANING, NOT EXACT WORDS. Be lenient.
+                            - If the user says ANYTHING related to: "Fake Ghost", "Not Real", "Coverup", "Murder of someone else", "Grandmother's secret", "Europe", "Resort", "Publishing book":
+                              Output: '[CORRECT_MOTIVE] Precisely. He uncovered the century-old lie.' then ask: "And finally, how exactly did he die?"
+                            - If the user is vague (e.g. "He found a secret"):
+                              Ask: "What specific secret? What was the ghost really?"
+                            - If the user is clearly WRONG (e.g. Money, Jealousy):
+                              Say "No, it wasn't about money. It was about something much older. What was he going to reveal?"
+                            
+                            CRITICAL: You MUST include the tag [CORRECT_MOTIVE] if the user is even partially correct about the secret/lie.
+                            ]`;
                         } else {
-                            systemNote = "\n[System: Motive identified. Now checking MODUS OPERANDI. Correct answer: ACCIDENT / Fall from stairs.\n- If user says 'Accident', 'Fall', 'Mistake', 'Stairs': Start response with '[CASE_SOLVED]' and congratulate them.\n- If WRONG (e.g. Murder, Killed, Stabbed, Poison, Gun): Say 'The autopsy suggests otherwise. Was it really intentional?']";
+                            systemNote = `\n[System: Motive identified. Now checking MODUS OPERANDI (How he died).
+                            THE TRUTH: ACCIDENT. Scared -> Fell.
+                            
+                            INSTRUCTIONS:
+                            - If user says: "Accident", "Fell", "Slipped", "Scared him", "Shock":
+                              Output: '[CASE_SOLVED] Case Closed.'
+                            - If user implies MURDER (Stabbed, Pushed, Poison):
+                              Say "The autopsy indicates a broken neck consistent with a fall. Did they intend to kill him, or just frighten him?"
+                            
+                            CRITICAL: Include [CASE_SOLVED] if the answer is correct.
+                            ]`;
                         }
                     }
                 } catch (e) { console.error("Error checking context:", e); }
@@ -1469,13 +1666,17 @@ const initApp = () => {
     let victoryData = { time: "00h 00m", name: "Detective" };
 
     function renderVictoryTile(container, timeString, userName, rewardCode) {
+
+        const btnSolver = document.getElementById('btn-found-killer');
+        if (btnSolver) btnSolver.style.display = 'none';
+
         container.innerHTML = `
-            <div class="victory-tile">
+            <div class="victory-tile" style="text-align: center;">
                 <div class="victory-image" style="background-image: url('https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Rohan.png?alt=media&token=57d2e062-1e3d-49a0-ba85-90e1b6bd7e8e'); width: 200px; height: 200px; margin: 0 auto 2rem auto;"></div>
-                <h2 style="color: var(--accent-gold);">Case Closed</h2>
-                <p>Time Taken: <span style="color: #fff">${timeString}</span></p>
+                <h2 style="color: var(--accent-gold); text-align: center;">Case Closed</h2>
+                <p style="text-align: center;">Time Taken: <span style="color: #fff">${timeString}</span></p>
                 <div class="victory-message" style="opacity: 0; animation: fadeIn 4s ease-in-out forwards 1s;">
-                    <p>Thank you, ${userName || 'Detective'}.<br>The manor is at peace.</p>
+                    <p>Thank you, ${userName || 'Detective'}. I owe you a debt I cannot repay.<br>The manor is finally at peace, and the truth is safe.<br><br>If you ever find yourself in Ernakulam, come visit our escape room. Use the code below for a free entry.</p>
                     <div style="margin-top: 20px; padding: 15px; border: 1px dashed var(--accent-gold); border-radius: 8px; background: rgba(0,0,0,0.3);">
                         <p style="font-size: 0.9em; margin-bottom: 10px;">Reward Coupon:</p>
                         <span style="font-size: 1.4em; color: var(--accent-gold); font-weight: bold;">${rewardCode || 'N/A'}</span>
@@ -1485,7 +1686,7 @@ const initApp = () => {
                 <button id="return-dash-btn" style="margin-top: 1rem;" class="investigate-btn">RETURN TO DASHBOARD</button>
             </div>`;
 
-        document.getElementById('return-dash-btn').addEventListener('click', () => window.location.reload());
+        document.getElementById('return-dash-btn').addEventListener('click', () => window.location.href = 'home.html');
 
         const viewStoryBtn = document.getElementById('view-story-btn');
         if (viewStoryBtn) {
@@ -1496,8 +1697,15 @@ const initApp = () => {
     }
 
     function showFullStory() {
-        const modal = document.querySelector('.case-modal');
+        const modal = document.querySelector('#case-modal-overlay .case-modal');
         const overlay = document.getElementById('case-modal-overlay');
+        const chatOverlay = document.getElementById('chat-modal-overlay');
+
+        if (!modal || !overlay) return;
+
+        // Hide chat overlay to ensure story is visible
+        if (chatOverlay) chatOverlay.style.display = 'none';
+
         const header = modal.querySelector('.modal-header h2');
         const content = modal.querySelector('.modal-content');
         const actions = modal.querySelector('.modal-actions');
@@ -1593,12 +1801,4 @@ const initApp = () => {
             renderVictoryTile(mainContainer, victoryData.time, victoryData.name, victoryData.rewardCode);
         }, 3000);
     }
-};
-
-// Initialize App safely dealing with Module timing
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
-} else {
-    initApp();
-}
 });

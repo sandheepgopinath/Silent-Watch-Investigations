@@ -2815,3 +2815,40 @@ body {
         right: 20px !important;
     }
 }
+
+/* --- Mobile Centering Fixes (User Request) --- */
+@media (max-width: 768px) {
+    /* Center Suspect Cards */
+    .suspect-card {
+        text-align: center !important;
+        align-items: center !important;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Center Auth/Login Widget */
+    .auth-card {
+        text-align: center !important;
+        margin: 0 auto !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Center Victory/Case Solved Container */
+    .victory-tile {
+        text-align: center !important;
+        margin: 0 auto !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center !important;
+        justify-content: center;
+    }
+
+    /* Ensure text within these containers is centered */
+    .victory-tile h2, 
+    .victory-tile p,
+    .victory-message {
+        text-align: center !important;
+    }
+}

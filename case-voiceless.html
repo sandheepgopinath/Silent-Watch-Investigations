@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Watch - Control Room</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="style.css?v=1.14">
+    <style>
+        :root {
+            --bg-color: #020408;
+            --panel-bg: rgba(10, 20, 30, 0.85);
+            --border-color: #1a2c3d;
+            --accent-cyan: #00f0ff;
+            --accent-red: #ff2a2a;
+            --accent-amber: #ffae00;
+            --text-primary: #e0f0ff;
+            --text-secondary: #8a9ba8;
+            --font-mono: 'Share Tech Mono', monospace;
+            --font-ui: 'Rajdhani', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Override body layout from style.css if needed, but dashboard-wrapper handles it */
+        body {
+            overflow: hidden;
+            /* Prevent double scroll */
+        }
+
+        /* CR specific overrides */
+        .dashboard-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            gap: 10px;
+            padding: 10px;
+            height: calc(100vh - 120px);
+            /* Adjust for header + subheader */
+        }
+
+        .cr-subheader {
+            height: 40px;
+            background: rgba(0, 20, 30, 0.5);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+            margin-bottom: 5px;
+        }
+
+        .system-status {
+            display: flex;
+            gap: 2rem;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .status-item span {
+            color: var(--text-primary);
+        }
+
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background: #00ff00;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            box-shadow: 0 0 5px #00ff00;
+        }
+
+        /* Responsive Dashboard */
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto !important;
+                /* Allow scroll on mobile */
+            }
+
+            .dashboard-grid {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                gap: 15px;
+                padding-bottom: 20px;
+            }
+
+            .panel {
+                min-height: 300px;
+                /* Give panels some height */
+                max-height: 500px;
+            }
+
+            /* Map needs specific height on mobile */
+            .panel:nth-child(2) {
+                height: 400px;
+                min-height: 400px;
+            }
+
+            .calls-list,
+            .chat-messages {
+                max-height: 300px;
+            }
+
+            .cr-subheader {
+                flex-direction: column;
+                height: auto;
+                padding: 10px;
+                gap: 5px;
+                align-items: flex-start;
+            }
+
+            .system-status {
+                gap: 1rem;
+                font-size: 0.8rem;
+                flex-wrap: wrap;
+            }
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .panel-header {
+            padding: 10px 15px;
+            background: rgba(0, 240, 255, 0.05);
+            border-bottom: 1px solid var(--border-color);
+            font-family: var(--font-mono);
+            color: var(--accent-cyan);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Calls Panel */
+        .calls-list {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        .call-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--text-secondary);
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .call-card.active {
+            border-left-color: var(--accent-red);
+            background: rgba(255, 42, 42, 0.05);
+            animation: pulse-red 2s infinite;
+        }
+
+        .call-card.sos {
+            border-left-color: var(--accent-amber);
+            background: rgba(255, 174, 0, 0.05);
+        }
+
+        .call-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .call-source {
+            font-weight: bold;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .call-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 5px 10px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .action-btn.urgent {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .action-btn.urgent:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        /* Map Panel */
+        #map-container {
+            flex: 1;
+            background: #000;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Chat Panel */
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            position: relative;
+        }
+
+        .message.unit {
+            align-self: flex-start;
+            background: rgba(0, 240, 255, 0.1);
+            border-left: 2px solid var(--accent-cyan);
+        }
+
+        .message.player {
+            align-self: flex-end;
+            background: rgba(255, 255, 255, 0.1);
+            border-right: 2px solid var(--text-secondary);
+            text-align: right;
+        }
+
+        .message.system {
+            align-self: center;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-align: center;
+            font-family: var(--font-mono);
+            background: transparent;
+        }
+
+        .message-sender {
+            font-size: 0.7rem;
+            color: var(--accent-cyan);
+            margin-bottom: 3px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+        }
+
+        .chat-input {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px;
+            font-family: var(--font-ui);
+            outline: none;
+        }
+
+        .chat-input button {
+            background: var(--accent-cyan);
+            border: none;
+            color: black;
+            padding: 0 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Visual Effects */
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 42, 42, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 42, 42, 0);
+            }
+        }
+
+        .glitch-text {
+            animation: glitch 1s linear infinite;
+        }
+
+        @keyframes glitch {
+
+            2%,
+            64% {
+                transform: translate(2px, 0) skew(0deg);
+            }
+
+            4%,
+            60% {
+                transform: translate(-2px, 0) skew(0deg);
+            }
+
+            62% {
+                transform: translate(0, 0) skew(5deg);
+            }
+        }
+
+        /* Toast Grid for top right notifications */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: rgba(10, 20, 30, 0.95);
+            border: 1px solid var(--accent-cyan);
+            padding: 15px 20px;
+            color: white;
+            min-width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            transform: translateX(120%);
+            transition: transform 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast i {
+            color: var(--accent-cyan);
+            font-size: 1.2rem;
+        }
+
+        /* Map custom markers overrides */
+        .custom-pin {
+            background: transparent;
+            border: none;
+        }
+
+        .pin-inner {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 10px var(--accent-red);
+            animation: pulse-pin 1.5s infinite;
+        }
+
+        @keyframes pulse-pin {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        /* Login Overlay */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 5, 10, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .login-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--accent-cyan);
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+            max-width: 500px;
+        }
+
+        .login-title {
+            font-family: var(--font-mono);
+            color: var(--accent-cyan);
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .start-btn {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 1rem 2rem;
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn:hover {
+            background: var(--accent-cyan);
+            color: black;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        /* Scanlines Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scanlines"></div>
+
+    <div class="dashboard-wrapper">
+        <!-- Mobile Menu Toggle -->
+        <button class="menu-toggle" id="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">SILENT WATCH</div>
+                <button class="close-menu" id="close-menu"><i class="fas fa-times"></i></button>
+            </div>
+
+            <nav class="nav-links">
+                <a href="escape-room.html"><i class="fas fa-dungeon"></i> Escape Rooms</a>
+                <a href="home.html" class="active"><i class="fas fa-folder-open"></i> Active Cases</a>
+                <a href="agents.html"><i class="fas fa-users"></i> Agents</a>
+            </nav>
+
+            <div class="user-profile-wrapper">
+                <div class="user-profile" id="profile-toggle">
+                    <div class="avatar"></div>
+                    <div class="user-info">
+                        <span class="name">Detective</span>
+                        <span class="status">Level 5 Clearance</span>
+                    </div>
+                    <i class="fas fa-chevron-up toggle-icon"></i>
+                </div>
+                <div class="profile-menu" id="profile-menu">
+                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <div class="logo-text">SILENT <img
+                        src="https://firebasestorage.googleapis.com/v0/b/studio-3143701674-93ada.firebasestorage.app/o/Gemini_Generated_Image_fbbszgfbbszgfbbs%20(1).png?alt=media&token=590ea21b-d64e-48d1-b3f7-fdfe965a7c0f"
+                        class="header-logo-icon" alt="Logo"> WATCH</div>
+                <div class="header-actions">
+                    <!-- Notification icon removed -->
+                </div>
+            </header>
+
+            <!-- Control Room Sub-Header with Stats -->
+            <div class="cr-subheader">
+                <span class="brand" style="font-size: 1rem;"><i class="fas fa-shield-alt"></i> CONTROL ROOM</span>
+                <div class="system-status">
+                    <div class="status-item"><span class="online-dot"></span>NETWORK: ONLINE</div>
+                    <div class="status-item">Unit 7: ACTIVE</div>
+                    <div class="status-item" id="clock">00:00:00</div>
+                </div>
+            </div>
+
+            <!-- Login Overlay moved inside main or kept fixed? kept fixed but need access -->
+            <!-- The login overlay covered the whole screen before. Now we want it over the dashboard grid or full screen?
+                 User said: 'Start your shift'. Usually this blocks interaction. 
+                 Let's keep it fixed full screen for effect, but ensure z-index is high. -->
+
+            <div class="dashboard-grid">
+                <!-- Left Panel: Incoming -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>INCOMING SIGNALS</span>
+                        <i class="fas fa-broadcast-tower"></i>
+                    </div>
+                    <div class="calls-list" id="calls-list">
+                        <!-- Calls will be injected here -->
+                        <div
+                            style="text-align: center; color: var(--text-secondary); padding-top: 50px; font-style: italic;">
+                            Scanning frequencies...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Panel: Map -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>GEOLOCATION TRACKING</span>
+                        <span id="map-status">LIVE FEED</span>
+                    </div>
+                    <div id="map-container">
+                        <div id="map"></div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Comms -->
+                <div class="panel" style="position: relative;">
+                    <div class="panel-header">
+                        <span>GROUND UNIT COMMS</span>
+                        <span class="status-item" id="chat-header-status" style="display: none;"><span
+                                class="online-dot"></span>Beta-1</span>
+                    </div>
+
+                    <div class="chat-messages" id="chat-messages" style="display: none;">
+                        <!-- Messages start empty -->
+                    </div>
+
+                    <div id="offline-overlay"
+                        style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); text-align: center; position: absolute; top: 50px; left: 0; right: 0; bottom: 60px;">
+                        <i class="fas fa-signal-slash" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p style="font-weight: bold; margin-bottom: 5px;">OFFLINE</p>
+                        <p style="font-size: 0.8rem;">Find a unit to start communication</p>
+                    </div>
+
+                    <div class="chat-input">
+                        <input type="text" id="chat-input" placeholder="Find a unit to start communication..." disabled>
+                        <button id="chat-send" disabled>SEND</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Login Overlay - Absolute position to cover screen -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <div class="login-title">
+                <i class="fas fa-satellite-dish"></i><br><br>
+                Silent Watch Control<br>Unit 7 - Kerala Region
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Authorized Personnel Only. Shift #4922
+                starting.</p>
+            <button class="start-btn" id="start-shift-btn">Start Shift</button>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Add Audio Elements -->
+    <audio id="sfx-alert" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+        preload="auto"></audio>
+    <audio id="sfx-static" src="https://assets.mixkit.co/active_storage/sfx/228/228-preview.mp3" preload="auto"
+        loop></audio>
+
+    <script type="module" src="case-voiceless.js?v=2.2"></script>
+    <div
+        style="position: fixed; top: 90px; right: 20px; color: #555; font-size: 0.8rem; z-index: 1000; font-family: monospace;">
+        v2.1</div>
+</body>
+
+</html>
