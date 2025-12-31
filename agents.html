@@ -62,12 +62,64 @@
 
             <!-- Agents View -->
             <div id="agents-view" class="active" style="display: block;">
-                <div class="view-header">
-                    <h2><i class="fas fa-network-wired"></i> Global Agent Network</h2>
+                <div class="agents-header-section">
+                    <div class="header-icon"><i class="fas fa-network-wired"></i></div>
+                    <h2>Global Agent Network</h2>
                     <p>Verified Personnel List</p>
                 </div>
-                <div id="agents-list" class="agents-grid">
-                    <!-- Agents populated by JS -->
+
+                <div class="agents-controls">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="agent-search" placeholder="Search">
+                    </div>
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label>Sort by:</label>
+                            <select id="sort-filter">
+                                <option value="time">Average Time</option>
+                                <option value="cases">Cases Solved</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status:</label>
+                            <select id="status-filter">
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="mission">On Mission</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Location:</label>
+                            <select id="location-filter">
+                                <option value="all">All Items</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="agents-table-container">
+                    <table class="agents-table">
+                        <thead>
+                            <tr>
+                                <th>Agent Name</th>
+                                <th>Cases Solved</th>
+                                <th>Average Time <i class="fas fa-sort"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="agents-table-body">
+                            <!-- Rows populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-controls">
+                    <span>Pagination:</span>
+                    <button class="page-btn disabled"><i class="fas fa-chevron-left"></i></button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                    <button class="page-btn"><i class="fas fa-step-forward"></i></button>
                 </div>
             </div>
         </main>

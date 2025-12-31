@@ -574,16 +574,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const line1 = document.getElementById('line1');
         const line2 = document.getElementById('line2');
+
         if (!line1 || !line2) return;
 
         line1.textContent = '';
         line2.textContent = '';
+
         line1.style.borderRight = 'none';
         line2.style.borderRight = 'none';
 
         // UPDATED TEXT HERE
-        const text1 = "Kochi's First Escape Room! Launching Soon!";
-        const text2 = "Are you ready to... unlock the experience?";
+        const text1 = "Kochi's First Immersive Escape Room!";
+        const text2 = "Launching Soon!";
 
         let i = 0;
         let j = 0;
@@ -591,7 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function typeLine1() {
             if (i < text1.length) {
                 line1.textContent += text1.charAt(i);
-                line1.style.borderRight = '2px solid var(--accent-red)';
+                line1.style.borderRight = '2px solid #e9d5ff';
                 i++;
                 setTimeout(typeLine1, 80);
             } else {
@@ -603,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function typeLine2() {
             if (j < text2.length) {
                 line2.textContent += text2.charAt(j);
-                line2.style.borderRight = '2px solid var(--accent-red)';
+                line2.style.borderRight = '2px solid #e9d5ff';
                 j++;
                 setTimeout(typeLine2, 80);
             } else {

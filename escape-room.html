@@ -93,12 +93,90 @@
 
             <!-- Escape Room Coming Soon Overlay -->
             <div id="escape-room-view" class="active">
+                <style>
+                    /* Page-specific Purple Theme Overrides */
+                    #escape-room-view .drop-text {
+                        text-shadow: 0 0 20px rgba(180, 100, 255, 0.8);
+                        /* Brighter Purple Glow */
+                    }
+
+                    #escape-room-view #line2 {
+                        color: #e9d5ff;
+                        /* Lighter Purple for Readability */
+                    }
+
+                    #escape-room-view .solve-btn {
+                        color: #e9d5ff;
+                        border-color: rgba(210, 180, 255, 0.6);
+                        box-shadow: 0 4px 15px rgba(157, 0, 255, 0.3);
+                        background: rgba(40, 0, 60, 0.4);
+                        /* Subtle dark purple tint backing */
+                    }
+
+                    #escape-room-view .solve-btn:hover {
+                        background: rgba(157, 0, 255, 0.25);
+                        border-color: #e9d5ff;
+                        box-shadow: 0 0 25px rgba(180, 100, 255, 0.6);
+                        color: #fff;
+                    }
+
+                    /* Global Purple Theme Overlay for this page */
+                    .escape-bg::after {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(60, 0, 120, 0.4);
+                        /* Purple Tint Overlay */
+                        mix-blend-mode: overlay;
+                        pointer-events: none;
+                        z-index: 1;
+                    }
+
+                    /* Ensure background itself is purple-ish */
+                    .escape-bg {
+                        filter: brightness(0.6) contrast(1.1) sepia(0.5) hue-rotate(220deg) saturate(1.5) !important;
+                    }
+
+
+                    /* Icon color override if needed, usually inherits but let's be safe */
+                    .logo i,
+                    .nav-links i {
+                        color: inherit;
+                    }
+
+                    .nav-links a.active {
+                        background: rgba(157, 0, 255, 0.15) !important;
+                        color: #e9d5ff !important;
+                        box-shadow: 0 0 15px rgba(157, 0, 255, 0.1);
+                    }
+
+                    .nav-links a:hover {
+                        color: #e9d5ff !important;
+                        background: rgba(157, 0, 255, 0.05);
+                    }
+
+                    .user-profile .avatar {
+                        border-color: #e9d5ff !important;
+                        box-shadow: 0 0 10px rgba(157, 0, 255, 0.3);
+                    }
+
+                    .user-profile:hover {
+                        background: rgba(157, 0, 255, 0.1) !important;
+                    }
+
+                    .page-header .logo-text {
+                        text-shadow: 0 0 15px rgba(157, 0, 255, 0.5) !important;
+                    }
+                </style>
                 <div class="typewriter-container">
-                    <h1 class="drop-text" id="line1">Kochi's First Escape Room! Launching Soon!</h1>
-                    <h2 class="drop-text subtitle-text" id="line2">Are you ready to... unlock the experience?</h2>
+                    <h1 class="drop-text" id="line1">Kochi's First Immersive Escape Room!</h1>
+                    <h2 class="drop-text subtitle-text" id="line2" style="font-size: 1.5rem; margin-top: 0.5rem;">
+                        Launching Soon!</h2>
                     <button class="solve-btn" id="static-solve-btn" style="display: none;"
-                        onclick="window.location.href='home.html'">Solve Our Immersive
-                        Cases</button>
+                        onclick="window.location.href='home.html'">Solve our Immersive Cases</button>
                 </div>
             </div>
 

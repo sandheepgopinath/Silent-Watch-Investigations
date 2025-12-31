@@ -1,13 +1,14 @@
 /* Reuse variables from before with additions */
 :root {
     --bg-color: #050505;
-    --sidebar-bg: #0a0a0a;
+    --sidebar-bg: rgba(10, 5, 20, 0.95);
     --card-bg: #111;
     --text-color: #eee;
     --text-muted: #888;
-    --accent-gold: #d9a520;
+    --accent-gold: #e9d5ff;
+    /* Global Accent Mapped to Purple */
     --accent-purple: #9d00ff;
-    --border-color: rgba(255, 255, 255, 0.1);
+    --border-color: rgba(157, 0, 255, 0.2);
     --font-heading: 'Cinzel', serif;
     --font-body: 'Lato', sans-serif;
     --sidebar-width: 260px;
@@ -91,7 +92,7 @@ body {
     /* Match text height */
     width: auto;
     vertical-align: middle;
-    filter: drop-shadow(0 0 5px rgba(217, 165, 32, 0.5));
+    filter: drop-shadow(0 0 5px rgba(157, 0, 255, 0.5));
 }
 
 .close-menu {
@@ -124,8 +125,9 @@ body {
 
 .nav-links a:hover,
 .nav-links a.active {
-    background: rgba(217, 165, 32, 0.1);
+    background: rgba(157, 0, 255, 0.15);
     color: var(--accent-gold);
+    box-shadow: 0 0 15px rgba(157, 0, 255, 0.1);
 }
 
 .user-profile {
@@ -221,7 +223,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 15px rgba(157, 0, 255, 0.5);
     z-index: 2;
 }
 
@@ -285,8 +287,8 @@ body {
 
 .case-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 40px -10px rgba(217, 165, 32, 0.1);
-    border-color: rgba(217, 165, 32, 0.3);
+    box-shadow: 0 15px 40px -10px rgba(157, 0, 255, 0.15);
+    border-color: rgba(157, 0, 255, 0.4);
 }
 
 .case-image {
@@ -674,7 +676,7 @@ body {
 }
 
 .user-profile:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(157, 0, 255, 0.1);
 }
 
 .avatar {
@@ -775,8 +777,8 @@ body {
     display: none;
     position: fixed;
     top: 0;
-    left: 0;
-    width: 100vw;
+    left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
     height: 100vh;
     overflow: hidden;
     z-index: 50;
@@ -1138,56 +1140,235 @@ body {
     text-shadow: 0 0 10px var(--accent-gold);
     background: linear-gradient(45deg, #fff, var(--accent-gold));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-/* Standardize Agents View (Remove Overlay behavior) */
+/* Agents View: Table Layout */
 #agents-view {
-    display: none;
-    /* Hidden by default */
-    padding: 2rem 4rem;
-    height: auto;
-    /* Let content dictate height */
-    overflow-y: visible;
-    /* Scroll handled by body/main */
-    position: relative;
-    /* In flow */
-    padding-top: 0;
-    /* Reset aggression */
-    padding-bottom: 4rem;
+    padding: 0 4rem 2rem 4rem;
+    color: #eee;
 }
 
-#agents-view.active {
-    display: block;
-    animation: fadeIn 0.5s ease-out;
+.agents-header-section {
+    text-align: center;
+    margin-bottom: 1rem;
+    margin-top: -3rem;
 }
 
-/* Reset View Header for Standard Flow */
-#agents-view .view-header {
-    margin-top: 2rem;
+.agents-header-section .header-icon {
+    font-size: 2.5rem;
+    color: var(--accent-gold);
+    margin-bottom: 1rem;
+    margin-top: 0;
+    text-shadow: 0 0 20px rgba(157, 0, 255, 0.4);
+}
+
+.agents-header-section h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 2.2rem;
+    color: #fff;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px var(--accent-gold);
+}
+
+.agents-header-section p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+/* Controls */
+.agents-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.search-bar {
+    flex: 1;
+    min-width: 300px;
+    background: rgba(20, 10, 30, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.8rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-bar i {
+    color: var(--text-muted);
+}
+
+.search-bar input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    width: 100%;
+    outline: none;
+    font-size: 1rem;
+}
+
+.filters-row {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(20, 10, 30, 0.6);
+    border: 1px solid var(--border-color);
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+}
+
+.filter-group label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.filter-group select {
+    background: transparent;
+    border: none;
+    color: #fff;
+    outline: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+}
+
+.filter-group select option {
+    background: #0a0514;
+    color: #eee;
+}
+
+/* Table */
+.agents-table-container {
+    background: rgba(10, 5, 20, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
     margin-bottom: 2rem;
 }
 
-/* Tighten Agents View Header */
-#agents-view .view-header {
-    margin-top: 0 !important;
-    /* Remove extra space */
-    padding-top: 1rem;
+.agents-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-/* Absolute Zero Padding for Agents Header */
-#agents-view {
-    padding-top: 0 !important;
+.agents-table th,
+.agents-table td {
+    padding: 1.2rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(157, 0, 255, 0.1);
 }
 
-#agents-view .view-header {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+.agents-table th {
+    background: rgba(157, 0, 255, 0.05);
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 0.9rem;
 }
 
-#agents-view .view-header h2 {
-    margin-top: 0 !important;
+/* Sort icon override */
+.agents-table th i {
+    font-size: 0.8em;
+    margin-left: 5px;
+    cursor: pointer;
 }
+
+.agents-table tbody tr:hover {
+    background: rgba(157, 0, 255, 0.03);
+}
+
+.agents-table td {
+    color: #ddd;
+    font-size: 0.95rem;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+    border: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.status-badge.mission {
+    background: rgba(255, 166, 0, 0.1);
+    color: #ffa600;
+    border: 1px solid rgba(255, 166, 0, 0.2);
+}
+
+.status-badge.idle {
+    background: rgba(150, 150, 150, 0.1);
+    color: #aaa;
+    border: 1px solid rgba(150, 150, 150, 0.2);
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Pagination */
+.pagination-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+}
+
+.page-btn {
+    background: rgba(20, 10, 30, 0.6);
+    border: 1px solid var(--border-color);
+    color: #aaa;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-btn:hover:not(.disabled) {
+    border-color: var(--accent-gold);
+    color: #fff;
+    background: rgba(157, 0, 255, 0.1);
+}
+
+.page-btn.active {
+    background: var(--accent-gold);
+    color: #000;
+    /* Contrast against light purple */
+    border-color: var(--accent-gold);
+    font-weight: bold;
+}
+
+.page-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 
 /* --- User Feedback Overrides --- */
 
@@ -2792,21 +2973,27 @@ body {
         z-index: 100 !important;
     }
 }
+
 /* --- Force Fix for Mobile Viewport Issues (iOS) --- */
 @media (max-width: 768px) {
+
     /* 1. Prevent Auto-Zoom on Inputs (iOS requires 16px) */
-    #chat-input, 
+    #chat-input,
     input[type="text"],
     input[type="password"] {
-        font-size: 16px !important; 
+        font-size: 16px !important;
     }
 
     /* 2. Sidebar Height Fix (Browser Chrome Aware) */
     .sidebar {
-        height: 100vh; /* Fallback */
-        height: 100dvh !important; /* Dynamic Viewport Height */
-        padding-bottom: 120px; /* Ensure logout button is reachable above address bar */
-        overflow-y: auto; /* scrollable if needed */
+        height: 100vh;
+        /* Fallback */
+        height: 100dvh !important;
+        /* Dynamic Viewport Height */
+        padding-bottom: 120px;
+        /* Ensure logout button is reachable above address bar */
+        overflow-y: auto;
+        /* scrollable if needed */
     }
 
     /* Ensure close button is reachable */
@@ -2818,6 +3005,7 @@ body {
 
 /* --- Mobile Centering Fixes (User Request) --- */
 @media (max-width: 768px) {
+
     /* Center Suspect Cards */
     .suspect-card {
         text-align: center !important;
@@ -2825,7 +3013,7 @@ body {
         display: flex;
         flex-direction: column;
     }
-    
+
     /* Center Auth/Login Widget */
     .auth-card {
         text-align: center !important;
@@ -2846,9 +3034,17 @@ body {
     }
 
     /* Ensure text within these containers is centered */
-    .victory-tile h2, 
+    .victory-tile h2,
     .victory-tile p,
     .victory-message {
         text-align: center !important;
     }
+}
+
+/* Fix for Authentication Button Loader Alignment */
+#access-pwd-submit {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
