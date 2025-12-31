@@ -1,5 +1,10 @@
 # Version History
 
+## v2.3
+- **Sidebar**:
+    - Fixed specific layout issue on mobile where user name and logout option were floating.
+    - Forced user profile section to anchor to the bottom of the sidebar.
+
 ## v2.2
 - **Agents Page**:
     - **Dynamic Stats**: Implemented logic to calculate individual player statistics.

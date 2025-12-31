@@ -2990,10 +2990,16 @@ body {
         /* Fallback */
         height: 100dvh !important;
         /* Dynamic Viewport Height */
-        padding-bottom: 120px;
+        padding-bottom: calc(2rem + env(safe-area-inset-bottom));
         /* Ensure logout button is reachable above address bar */
         overflow-y: auto;
         /* scrollable if needed */
+    }
+
+    /* Force user profile to bottom */
+    .user-profile {
+        margin-top: auto !important;
+        padding-bottom: 1rem;
     }
 
     /* Ensure close button is reachable */
