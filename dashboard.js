@@ -197,12 +197,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', () => {
             sidebar.classList.add('active');
+            menuToggle.style.display = 'none';
         });
     }
 
     if (closeMenu && sidebar) {
         closeMenu.addEventListener('click', () => {
             sidebar.classList.remove('active');
+            if (menuToggle) menuToggle.style.display = 'block';
         });
     }
 
@@ -210,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sidebar && sidebar.classList.contains('active')) {
             if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
                 sidebar.classList.remove('active');
+                if (menuToggle) menuToggle.style.display = 'block';
             }
         }
     });

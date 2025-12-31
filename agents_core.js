@@ -7,7 +7,6 @@ export async function fetchAgents() {
     console.log("Fetching agents...");
     const tableBody = document.getElementById('agents-table-body');
     const searchInput = document.getElementById('agent-search');
-    const sortSelect = document.getElementById('sort-filter');
 
     if (!tableBody) return;
 
@@ -85,11 +84,6 @@ export async function fetchAgents() {
         if (searchInput) {
             searchInput.addEventListener('input', () => renderAgents());
         }
-        if (sortSelect) {
-            sortSelect.addEventListener('change', () => renderAgents());
-            // Set default sort to time in UI if possible, or just respect render logic
-            sortSelect.value = 'time';
-        }
 
         renderAgents();
 
@@ -115,20 +109,8 @@ function renderAgents() {
         }
     }
 
-    // Sort
-    if (sortSelect) {
-        const sortValue = sortSelect.value;
-        if (sortValue === 'time') {
-            // Increasing order of average time (Fastest/Smallest first)
-            filtered.sort((a, b) => a.totalMinutesForSort - b.totalMinutesForSort);
-        } else if (sortValue === 'cases') {
-            // Decreasing order of cases (Most first)
-            filtered.sort((a, b) => b.solvedCount - a.solvedCount);
-        }
-    } else {
-        // Default Fallback: Time increasing
-        filtered.sort((a, b) => a.totalMinutesForSort - b.totalMinutesForSort);
-    }
+    // Sort: Default to Time increasing
+    filtered.sort((a, b) => a.totalMinutesForSort - b.totalMinutesForSort);
 
     // Render
     tableBody.innerHTML = '';

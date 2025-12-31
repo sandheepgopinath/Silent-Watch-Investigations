@@ -1,5 +1,10 @@
 # Version History
 
+## v2.4
+- **UI/UX**:
+    - **Mobile Agents Page**: Adaptive column visibility. Hidden "Cases Solved" column on small screens to prevent horizontal scrolling.
+    - **General**: Fixed various UI alignment issues and screen resizing behaviors.
+
 ## v2.3
 - **Sidebar**:
     - Fixed specific layout issue on mobile where user name and logout option were floating.
