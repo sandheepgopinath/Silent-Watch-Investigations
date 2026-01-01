@@ -8,8 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="style.css?v=1.14">
     <style>
         :root {
@@ -41,9 +39,9 @@
         .dashboard-grid {
             flex: 1;
             display: grid;
-            grid-template-columns: 350px 1fr 400px;
-            gap: 10px;
-            padding: 10px;
+            grid-template-columns: 450px 1fr;
+            gap: 15px;
+            padding: 15px;
             height: calc(100vh - 120px);
             /* Adjust for header + subheader */
         }
@@ -472,6 +470,255 @@
             pointer-events: none;
             z-index: 1000;
         }
+
+        /* New SOS Alert Design */
+        .sos-alert-card {
+            background: #04080c;
+            border: 1px solid #ff2a2a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(255, 42, 42, 0.1);
+            font-family: var(--font-ui);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sos-header {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .sos-icon-box {
+            width: 70px;
+            height: 70px;
+            background: #ff2a2a;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 42, 42, 0.4);
+            flex-shrink: 0;
+        }
+
+        .sos-info {
+            flex-grow: 1;
+        }
+
+        .sos-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+
+        .sos-subtitle {
+            font-size: 1rem;
+            color: #ff2a2a;
+            font-weight: 600;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .sos-timer-badge {
+            background: #ff2a2a;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 1rem;
+            height: fit-content;
+        }
+
+        .sos-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 15px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sos-field {
+            display: grid;
+            grid-template-columns: 140px 1fr auto;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .field-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .field-value {
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .sos-field:has(.field-btn) .field-value {
+            display: none;
+        }
+
+        .field-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            transition: all 0.2s;
+            white-space: nowrap;
+            letter-spacing: 1px;
+        }
+
+        .field-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            border-color: #ff2a2a;
+            /* Pulsing red theme */
+            box-shadow: 0 0 15px rgba(255, 42, 42, 0.4);
+        }
+
+        .field-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: var(--text-secondary);
+        }
+
+        .sos-footer {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        .dispatch-btn {
+            background: white;
+            color: #ff2a2a;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .dispatch-btn:hover {
+            background: #f0f0f0;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .video-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .video-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes pulse-red-border {
+            0% {
+                border-color: #ff2a2a;
+            }
+
+            50% {
+                border-color: #ff0000;
+                box-shadow: inset 0 0 30px rgba(255, 0, 0, 0.3);
+            }
+
+            100% {
+                border-color: #ff2a2a;
+            }
+        }
+
+        .sos-alert-card.active {
+            animation: pulse-red-border 2s infinite;
+        }
+
+        /* Pulse for icons */
+        .pulse-icon {
+            animation: pulse-icon 1.5s infinite;
+        }
+
+        @keyframes pulse-icon {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .message.unit.typing .dot {
+            animation: blink 1.4s infinite both;
+            font-size: 1.5rem;
+            line-height: 0;
+            display: inline-block;
+            margin: 0 1px;
+        }
+
+        .message.unit.typing .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .message.unit.typing .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 0.2;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
+        }
     </style>
 </head>
 
@@ -555,16 +802,6 @@
                     </div>
                 </div>
 
-                <!-- Center Panel: Map -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <span>GEOLOCATION TRACKING</span>
-                        <span id="map-status">LIVE FEED</span>
-                    </div>
-                    <div id="map-container">
-                        <div id="map"></div>
-                    </div>
-                </div>
 
                 <!-- Right Panel: Comms -->
                 <div class="panel" style="position: relative;">
@@ -609,8 +846,6 @@
 
     <div class="toast-container" id="toast-container"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Add Audio Elements -->
     <audio id="sfx-alert" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
         preload="auto"></audio>

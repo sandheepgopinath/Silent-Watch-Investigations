@@ -1,4 +1,8 @@
 import { db, doc, getDoc, setDoc, updateDoc, serverTimestamp, logoutUser, monitorAuthState } from './auth.js';
+import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+const genAI = null;
+const model = null;
 
 // Configuration
 const CONFIG = {
@@ -23,8 +27,8 @@ let state = {
 };
 
 // Map
-let map;
 let markers = {};
+let chatHistory = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize Event Listeners immediately
@@ -74,9 +78,6 @@ function initSystem() {
     // Clock
     setInterval(updateClock, 1000);
 
-    // Map Init (Leaflet)
-    initMap();
-
     // Event Listeners regarding Chat (Start Shift moved to DOMContentLoaded)
     document.getElementById('chat-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendPlayerMessage();
@@ -123,32 +124,68 @@ function updateClock() {
     document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
 }
 
-function initMap() {
-    // Centered on Cochin
-    map = L.map('map', {
-        zoomControl: false,
-        attributionControl: false
-    }).setView([10.02, 76.32], 12);
 
-    // Dark styled tiles (CartoDB Dark Matter)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19
-    }).addTo(map);
+
+
+// --- SCENARIO 1: ACCIDENT ---
+
+// --- SCENARIO 1: ACCIDENT ---
+
+function createSOSCard(id, title, subtitle, locKey) {
+    const card = document.createElement('div');
+    card.className = 'sos-alert-card active';
+    card.id = id;
+    card.innerHTML = `
+        <div class="sos-header">
+            <div class="sos-icon-box">
+                <i class="fas fa-map-marker-alt pulse-icon"></i>
+            </div>
+            <div class="sos-info">
+                <div class="sos-title">${title}</div>
+                <div class="sos-subtitle">${subtitle}</div>
+            </div>
+            <div class="sos-timer-badge" id="${id}-timer">00:01</div>
+        </div>
+        
+        <div class="sos-fields">
+            <div class="sos-field">
+                <span class="field-label">Location :</span>
+                <span class="field-value" id="${id}-location">SIGNAL TRIANGULATED</span>
+                <button class="field-btn" id="${id}-track-btn" onclick="window.trackLocation('${locKey}', '${id}')">Track Location</button>
+            </div>
+            <div class="sos-field">
+                <span class="field-label">Assigned unit :</span>
+                <span class="field-value" id="${id}-unit">NONE</span>
+                <button class="field-btn" id="${id}-unit-btn" onclick="window.findNearestUnit('${id}')" disabled>Find nearest unit</button>
+            </div>
+            <div class="sos-field">
+                <span class="field-label">Case Status :</span>
+                <span class="field-value" id="${id}-status">NEW</span>
+            </div>
+            <div class="sos-field">
+                <span class="field-label">Chat Status :</span>
+                <span class="field-value" id="${id}-chat-status">OFFLINE</span>
+                <button class="field-btn" id="${id}-chat-btn" onclick="window.chatWithUnit('${id}')" disabled>Chat with unit</button>
+            </div>
+        </div>
+    `;
+
+    // Start a simple timer for this card
+    let seconds = 1;
+    const timerInterval = setInterval(() => {
+        if (!document.getElementById(id)) {
+            clearInterval(timerInterval);
+            return;
+        }
+        seconds++;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        document.getElementById(`${id}-timer`).textContent =
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+
+    return card;
 }
-
-// Custom Icon definition
-const pinIcon = L.divIcon({
-    className: 'custom-pin',
-    html: '<div class="pin-inner"></div>',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
-});
-
-
-
-// --- SCENARIO 1: ACCIDENT ---
-
-// --- SCENARIO 1: ACCIDENT ---
 
 function triggerScenario1() {
     state.stage = 'SOS_RECEIVED';
@@ -157,73 +194,78 @@ function triggerScenario1() {
     // Verify progress
     updateVoicelessProgress({ sosBeaconShown: true });
 
-    // Chat is offline by default in HTML now
-
     // Create Alert Card
     const callList = document.getElementById('calls-list');
     callList.innerHTML = '';
 
-    const alertCard = document.createElement('div');
-    alertCard.className = 'call-card sos active';
-    alertCard.id = 'alert-s1';
-    alertCard.innerHTML = `
-        <div class="call-header">
-            <span>SOS BEACON</span>
-            <span>00:00:01</span>
-        </div>
-        <div class="call-source">CRASH DETECTED</div>
-        <div style="color: var(--accent-amber); margin: 5px 0;">Signal Triangulated</div>
-        <div class="call-actions">
-            <button class="action-btn" onclick="window.trackLocation('kalamserry')">TRACK LOCATION</button>
-        </div>
-    `;
+    const alertCard = createSOSCard('alert-s1', 'OFFICER DOWN', 'SECTOR 4 • PANIC #9921', 'kalamserry');
     callList.appendChild(alertCard);
 }
 
 // Global scope for HTML button access
-window.trackLocation = (locKey) => {
+window.trackLocation = (locKey, alertId) => {
     const loc = CONFIG.locations[locKey];
     if (!loc) return;
-
-    // Pan to map
-    map.flyTo([loc.lat, loc.lng], 15, { duration: 2 });
 
     // Auto-scroll for mobile
     if (window.innerWidth <= 768) {
         document.getElementById('map-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // Add marker
-    if (!markers[locKey]) {
-        markers[locKey] = L.marker([loc.lat, loc.lng], { icon: pinIcon }).addTo(map)
-            .bindPopup(loc.label).openPopup();
+    const locField = document.getElementById(`${alertId}-location`);
+    const trackBtn = document.getElementById(`${alertId}-track-btn`);
+    const unitBtn = document.getElementById(`${alertId}-unit-btn`);
+    const statusField = document.getElementById(`${alertId}-status`);
+
+    // Show Tracking state
+    if (trackBtn) {
+        trackBtn.textContent = "TRACKING...";
+        trackBtn.disabled = true;
     }
 
-    if (locKey === 'kalamserry' && state.stage === 'SOS_RECEIVED') {
-        updateVoicelessProgress({ trackingStarted: true });
-        const card = document.getElementById('alert-s1');
-        card.querySelector('.call-actions').innerHTML = `
-            <button class="action-btn urgent" onclick="window.findNearestUnit()">FIND NEAREST UNIT</button>
-        `;
-    }
+    setTimeout(() => {
+        if (locField) locField.textContent = loc.label;
+        if (trackBtn) trackBtn.remove();
+        if (unitBtn) unitBtn.disabled = false;
+        if (statusField && statusField.textContent === 'NEW') statusField.textContent = 'OPEN';
 
-    if (locKey === 'kakkanad' && (state.stage === 'CALL_INCOMING' || state.stage === 'CALL_ACTIVE')) {
-        const card = document.getElementById('alert-s2');
-        if (card) {
-            card.querySelector('.call-actions').innerHTML = `
-                <button class="action-btn urgent" onclick="window.dispatchUnit('kakkanad')">DISPATCH UNIT</button>
-             `;
+        if (locKey === 'kalamserry' && state.stage === 'SOS_RECEIVED') {
+            updateVoicelessProgress({ trackingStarted: true });
         }
+
+        if (locKey === 'kakkanad' && (state.stage === 'CALL_INCOMING' || state.stage === 'CALL_ACTIVE')) {
+            const dispatchBtn = document.getElementById(`${alertId}-dispatch-btn`);
+            if (dispatchBtn) {
+                dispatchBtn.disabled = false;
+                dispatchBtn.onclick = () => window.dispatchUnit('kakkanad', alertId);
+            }
+        }
+    }, 1000);
+};
+
+window.chatWithUnit = (alertId) => {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.focus();
+        showToast("COMMUNICATION CHANNEL ACTIVE", "success");
+    }
+    // Auto-scroll to chat on mobile
+    if (window.innerWidth <= 768) {
+        document.querySelector('.panel:last-child').scrollIntoView({ behavior: 'smooth' });
     }
 };
 
 let carMarker = null;
 
-window.findNearestUnit = () => {
+window.findNearestUnit = (alertId) => {
     updateVoicelessProgress({ unitSearchStarted: true });
     showToast("Scanning for nearby units...", "info");
-    const card = document.getElementById('alert-s1');
-    card.querySelector('.call-actions').innerHTML = `<span style="color:var(--text-secondary); font-size: 0.8rem;">SCANNING...</span>`;
+
+    const unitField = document.getElementById(`${alertId}-unit`);
+    const unitBtn = document.getElementById(`${alertId}-unit-btn`);
+
+    if (unitField) unitField.textContent = "FINDING UNIT...";
+    if (unitBtn) unitBtn.remove();
 
     setTimeout(() => {
         // Unit Found - Animate
@@ -232,77 +274,84 @@ window.findNearestUnit = () => {
         enableChat(); // Enable Input immediately
         showToast("UNIT BETA-1 IDENTIFIED", "success");
 
-        // Start point (arbitrary offset)
-        const startLat = 10.0570;
-        const startLng = 76.3280;
-        const endLat = CONFIG.locations.kalamserry.lat;
-        const endLng = CONFIG.locations.kalamserry.lng;
+        if (unitField) unitField.textContent = "BETA-1";
 
-        // Custom Car Icon
-        const carIcon = L.divIcon({
-            className: 'custom-pin',
-            html: '<div style="font-size: 20px; color: var(--accent-cyan);"><i class="fas fa-car"></i></div>',
-            iconSize: [25, 25],
-            iconAnchor: [12, 12]
-        });
+        // Enable Chat on card immediately when unit is found
+        const chatStatus = document.getElementById(`${alertId}-chat-status`);
+        const chatBtn = document.getElementById(`${alertId}-chat-btn`);
+        if (chatStatus) chatStatus.textContent = "ACTIVE";
+        if (chatBtn) chatBtn.disabled = false;
 
-        carMarker = L.marker([startLat, startLng], { icon: carIcon }).addTo(map);
+        // Auto-start unit movement for Scenario 1
+        startUnitMovement(alertId);
 
-        // Initial Message
-        addChatMessage("Beta-1", "Dispatch, we have your location. ETA 20 seconds. We are en route.");
+        function startUnitMovement(id) {
+            // Start point (arbitrary offset)
+            const startLat = 10.0570;
+            const startLng = 76.3280;
+            const endLat = CONFIG.locations.kalamserry.lat;
+            const endLng = CONFIG.locations.kalamserry.lng;
 
-        // Animation Loop (20s)
-        const duration = 20000;
-        const startTime = Date.now();
+            // Initial Message
+            addChatMessage("Beta-1", "Dispatch, we have your location. ETA 5 seconds. We are en route.");
 
-        function animate() {
-            const now = Date.now();
-            const progress = Math.min((now - startTime) / duration, 1);
+            // Fake Animation (5s)
+            const duration = 5000;
+            const startTime = Date.now();
 
-            const lat = startLat + (endLat - startLat) * progress;
-            const lng = startLng + (endLng - startLng) * progress;
+            function animate() {
+                const now = Date.now();
+                const progress = Math.min((now - startTime) / duration, 1);
 
-            carMarker.setLatLng([lat, lng]);
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Arrival
+                    state.stage = 'UNIT_DISPATCHED';
+                    updateVoicelessProgress({ unitArrived: true });
+                    const card = document.getElementById(id);
+                    if (card) card.classList.remove('active');
 
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-                card.querySelector('.call-actions button').innerText = `ETA: ${Math.ceil(20 - (progress * 20))}s`;
-            } else {
-                // Arrival
-                state.stage = 'UNIT_DISPATCHED';
-                updateVoicelessProgress({ unitArrived: true });
-                card.classList.remove('active');
-                card.querySelector('.call-actions').innerHTML = `<span style="color:var(--accent-cyan)">UNIT ON SITE</span>`;
+                    // Update Chat Status UI
+                    const chatStatus = document.getElementById(`${id}-chat-status`);
+                    const chatBtn = document.getElementById(`${id}-chat-btn`);
+                    if (chatStatus) chatStatus.textContent = "ACTIVE";
+                    if (chatBtn) chatBtn.disabled = false;
 
-                // Enable Chat (Ensure it stays enabled)
-                enableChat();
-                addChatMessage("Beta-1", "Dispatch, we have arrived at the coordinates. It's a collision.");
-                setTimeout(() => {
-                    addChatMessage("Beta-1", "I see a crowd gathering around the vehicles. It looks tense. Should I intervene directly or hold back?");
-                }, 2000);
+                    // Enable Chat (Ensure it stays enabled)
+                    enableChat();
+                    addChatMessage("Beta-1", "Dispatch, we have arrived at the coordinates. It's a collision.");
+                    setTimeout(() => {
+                        addChatMessage("Beta-1", "I see a crowd gathering around the vehicles. It looks tense. Should I intervene directly or hold back?");
+                    }, 2000);
+                }
             }
+            requestAnimationFrame(animate);
         }
-        requestAnimationFrame(animate);
 
+        // Auto-start for this scenario's demo flow or wait for button?
+        // Let's wait for "DISPATCH UNIT" click
     }, 2000); // 2s scanning delay
 };
 
 // Reused for S2
-window.dispatchUnit = (locKey) => {
+window.dispatchUnit = (locKey, alertId) => {
     if (locKey === 'kakkanad') {
         state.stage = 'UNIT_DISPATCHED_S2';
         showToast("UNIT BETA-1 REDIRECTED", "warning");
 
         stopCall();
 
-        const card = document.getElementById('alert-s2');
-        if (card) {
-            card.classList.remove('active');
-            card.querySelector('.call-actions').innerHTML = `<span style="color:var(--accent-cyan)">UNIT INVESTIGATING</span>`;
+        const dispatchBtn = document.getElementById(`${alertId}-dispatch-btn`);
+        const statusField = document.getElementById(`${alertId}-status`);
+
+        if (dispatchBtn) {
+            dispatchBtn.remove();
         }
+        if (statusField) statusField.textContent = "OPEN";
 
         addChatMessage("Beta-1", "Copy that Control. Diverting to Kakkanad coordinates. It's... pretty isolated out there.");
-        setTimeout(startScenario2Sequence, 6000);
+        startScenario2Sequence(); // Trigger faster for demo since movement is fake now
     }
 };
 
@@ -340,77 +389,106 @@ function sendPlayerMessage() {
     handleAIResponse(msg);
 }
 
-function handleAIResponse(playerMsg) {
-    playerMsg = playerMsg.toLowerCase();
+async function handleAIResponse(playerMsg) {
+    const chatContainer = document.getElementById('chat-messages');
 
-    // Scenario 1 Logic - Dependent AI
+    // Scenario Context
+    let context = "";
     if (state.stage === 'UNIT_DISPATCHED' && !state.scenario1Resolved) {
-        setTimeout(() => {
-            // SCENARIO 1 STATE MACHINE
-            const unitMsgs = document.querySelectorAll('.message.unit');
-            const lastMsg = unitMsgs.length > 0 ? unitMsgs[unitMsgs.length - 1].textContent : '';
-
-            // 1. ARRIVED -> CROWD_CONTROL
-            if (state.s1SubState === 'ARRIVED') {
-                if (playerMsg.includes('intervene') || playerMsg.includes('stop') || playerMsg.includes('separate') || playerMsg.includes('handle')) {
-                    addChatMessage("Beta-1", "Copy that. Stepping out to intervene. Separating the two drivers now. Stand by.");
-                    state.s1SubState = 'CROWD_CONTROL';
-
-                    setTimeout(() => {
-                        addChatMessage("Beta-1", "Situation under control. Individuals separated. De-escalation successful. No weapons found.");
-                        setTimeout(() => {
-                            addChatMessage("Beta-1", "One driver is agitated but compliant. Proceeding to collect statements and insurance details?");
-                        }, 2000);
-                    }, 4000);
-                } else if (playerMsg.includes('wait') || playerMsg.includes('hold')) {
-                    addChatMessage("Beta-1", "Holding position. But the argument is turning physical. Advising immediate intervention.");
-                } else {
-                    addChatMessage("Beta-1", "The crowd is filming. Drivers are shoving each other. Awaiting orders to intervene.");
-                }
-            }
-            // 2. CROWD_CONTROL -> DETAILS
-            else if (state.s1SubState === 'CROWD_CONTROL') {
-                if (playerMsg.includes('proceed') || playerMsg.includes('collect') || playerMsg.includes('yes') || playerMsg.includes('detail')) {
-                    addChatMessage("Beta-1", "Affirmative. Collecting IDs and statements now... ");
-                    state.s1SubState = 'DETAILS';
-
-                    setTimeout(() => {
-                        addChatMessage("Beta-1", "Details secured. Minor paint damage only. Both parties have exchanged info.");
-                        setTimeout(() => {
-                            addChatMessage("Beta-1", "Traffic is moving again. Scene is secure. We are ready to clear.");
-                        }, 3000);
-                    }, 4000);
-                } else {
-                    addChatMessage("Beta-1", "Standing by to collect details on your mark.");
-                }
-            }
-            // 3. DETAILS -> READY_TO_CLOSE
-            else if (state.s1SubState === 'DETAILS') {
-                if (playerMsg.includes('clear') || playerMsg.includes('leave') || playerMsg.includes('close') || playerMsg.includes('done')) {
-                    addChatMessage("Beta-1", "Understood. We are returning to patrol. You can mark the case as closed on your end.");
-                    state.s1SubState = 'READY_TO_CLOSE';
-                    resolveScenario1UI(); // Show button
-                } else {
-                    addChatMessage("Beta-1", "We are done here. Ready to clear the scene?");
-                }
-            }
-        }, 1500);
+        context = `You are Unit Beta-1, a ground responder for "Silent Watch Investigations". 
+        CURRENT SITUATION: You have just arrived at Kalamassery Junction where an accident occurred. A crowd is gathering and two drivers are arguing. 
+        YOUR GOAL: De-escalate the situation, collect details, and clear the scene.
+        SUB-STATE: Currently at ${state.s1SubState}. 
+        STYLE: Use short, to-the-point responses. Avoid poetic or flowery language. Act like a professional responder in a high-stress situation.
+        INSTRUCTIONS: 
+        1. If state is ARRIVED: Describe the tense scene concisely. Wait for orders to intervene.
+        2. If state is CROWD_CONTROL: You've separated them. One driver is agitated. Wait for orders to collect details.
+        3. If state is DETAILS: You have the info. Scene is secure. Ready to clear. Notify player to archive/close the case once you feel the scene is cleared.
+        - Act human, professional, but slightly stressed by the crowd. 
+        - If asked off-topic stuff (weather, personal life, etc.), answer briefly or dismissively but redirect focus to the emergency. Eg: "Look, I don't think the weather is our priority right now. We have people fighting here."
+        - DO NOT repeat yourself. Use variety in your sentences.
+        - Once humanly possible, prompt the user to let you clear the scene so they can close the case.`;
+    } else if (state.stage === 'TRAP_ACTIVE') {
+        context = `You are Unit Beta-1. YOU ARE TRAPPED in an abandoned house in Kakkanad. 
+        SITUATION: Electronic doors slammed shut. A screen says 'GAS RELEASE INITIALIZED'. There is a countdown. 
+        STYLE: Short, urgent, tactical responses. No poetic fluff. 
+        TONE: Urgent, panicking, audible heavy breathing in text.
+        GOAL: Describe your surroundings (old monitors, reinforced glass, hissing sound) and ask for override codes or instructions. The situation is dire.`;
+    } else {
+        context = `You are Unit Beta-1. You are in transit or on standby. Be concise.`;
     }
-    // Scenario 2 Logic (House)
-    else if (state.stage === 'TRAP_ACTIVE') {
-        setTimeout(() => {
-            addChatMessage("Beta-1", "We are trying the door! It's jammed!");
-        }, 2000);
+
+    // Add Typing Indicator
+    const typingMsg = document.createElement('div');
+    typingMsg.className = 'message unit typing';
+    typingMsg.innerHTML = `<div class="message-sender">Beta-1</div><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>`;
+    chatContainer.appendChild(typingMsg);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    try {
+        // Fetch API Key dynamically (Align with working dashboard.js)
+        let apiKey = null;
+        try {
+            const configRef = doc(db, "config", "api_keys");
+            const configSnap = await getDoc(configRef);
+            if (configSnap.exists()) apiKey = configSnap.data().gemini;
+        } catch (e) {
+            console.error("Database error fetching key:", e);
+        }
+
+        if (!apiKey) {
+            typingMsg.remove();
+            addChatMessage("Beta-1", "Dispatch, voice module offline. Check system config.");
+            return;
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+
+        // Keep history manageable
+        if (chatHistory.length > 10) chatHistory.shift();
+
+        const fullPrompt = `${context}\n\nRecent History:\n${chatHistory.join('\n')}\n\nControl (User): ${playerMsg}\n\nBeta-1:`;
+
+        console.log("Calling Gemini (2.0-flash-lite) with prompt:", fullPrompt);
+
+        const result = await model.generateContent(fullPrompt);
+        const response = await result.response;
+        const responseText = response.text();
+
+        console.log("Gemini Response:", responseText);
+
+        // Remove Typing Indicator
+        typingMsg.remove();
+
+        // Add to history
+        chatHistory.push(`Control: ${playerMsg}`);
+        chatHistory.push(`Beta-1: ${responseText}`);
+
+        addChatMessage("Beta-1", responseText);
+
+        // Sub-state advancement based on AI content (rough heuristic)
+        const lowerRes = responseText.toLowerCase();
+        if (state.stage === 'UNIT_DISPATCHED') {
+            if (state.s1SubState === 'ARRIVED' && (lowerRes.includes('interven') || lowerRes.includes('separat') || lowerRes.includes('step out'))) {
+                state.s1SubState = 'CROWD_CONTROL';
+            } else if (state.s1SubState === 'CROWD_CONTROL' && (lowerRes.includes('collect') || lowerRes.includes('details') || lowerRes.includes('ids'))) {
+                state.s1SubState = 'DETAILS';
+            } else if (state.s1SubState === 'DETAILS' && (lowerRes.includes('clear') || lowerRes.includes('closed') || lowerRes.includes('archive'))) {
+                resolveScenario1UI();
+            }
+        }
+
+    } catch (e) {
+        console.error("AI Error:", e);
+        typingMsg.remove();
+        addChatMessage("Beta-1", "Dispatch, signal is breaking up. Repeat your last message.");
     }
 }
 
 function resolveScenario1UI() {
-    const card = document.getElementById('alert-s1');
-    if (card) {
-        card.querySelector('.call-actions').innerHTML = `
-            <button class="action-btn urgent" onclick="window.closeAccidentCase()">CLOSE CASE</button>
-        `;
-    }
+    const statusField = document.getElementById('alert-s1-status');
+    if (statusField) statusField.textContent = "CLOSED";
 }
 
 window.closeAccidentCase = async () => {
@@ -453,31 +531,26 @@ function triggerScenario2() {
 
     playStatic();
 
-    // Create Call Card
+    // Create Call Card using same UI
     const callList = document.getElementById('calls-list');
-    const callCard = document.createElement('div');
-    callCard.className = 'call-card active';
-    callCard.id = 'alert-s2';
-    callCard.innerHTML = `
-        <div class="call-header">
-            <span>INCOMING CALL</span>
-            <span>UNKNOWN</span>
-        </div>
-        <div class="call-source">NO CALLER ID</div>
-        <div style="color: var(--accent-red); margin: 5px 0;">Signal: Unstable</div>
-        <div class="call-actions">
-            <button class="action-btn" onclick="window.answerCall()">ANSWER</button>
-        </div>
-    `;
+    const callCard = createSOSCard('alert-s2', 'INCOMING SIGNAL', 'UNKNOWN ORIGIN • SIGNAL UNSTABLE', 'kakkanad');
     callList.appendChild(callCard);
+
+    // Initial state for Call
+    document.getElementById('alert-s2-location').textContent = "TRIANGULATING...";
+    document.getElementById('alert-s2-track-btn').innerHTML = "ANSWER";
+    document.getElementById('alert-s2-track-btn').onclick = () => window.answerCall();
 }
 
 window.answerCall = () => {
-    const card = document.getElementById('alert-s2');
-    card.querySelector('.call-actions').innerHTML = `
-        <button class="action-btn urgent" onclick="window.trackLocation('kakkanad')">TRACK SIGNAL</button>
-        <button class="action-btn" onclick="window.disconnectCall()">DISCONNECT</button>
-    `;
+    const trackBtn = document.getElementById('alert-s2-track-btn');
+    const statusField = document.getElementById('alert-s2-status');
+
+    if (statusField) statusField.textContent = "OPEN";
+    if (trackBtn) {
+        trackBtn.innerHTML = "TRACK SIGNAL";
+        trackBtn.onclick = () => window.trackLocation('kakkanad', 'alert-s2');
+    }
 
     // Visual Static Effect on body
     document.body.classList.add('glitch-text'); // simplified effect
@@ -513,7 +586,6 @@ function stopCall() {
 
 function startScenario2Sequence() {
     // Night Mode
-    map.flyTo(CONFIG.locations.kakkanad, 16);
     document.documentElement.style.filter = "contrast(1.2) brightness(0.8)";
 
     addChatMessage("Beta-1", "Control, we've reached the coordinates... It's an abandoned house. Very old architecture. Looks completely dark.");
@@ -651,71 +723,47 @@ function restoreGameState(data) {
     }
 
     // 1. Hide Intro if any progress beyond just starting
-    if (data.sosBeaconShown || data.shiftStarted) {
-        // User requested: "If user clicked start shift, next time it will be continue shift".
-        // This implies the overlay might still be there but text changes?
-        // OR does it mean "Resume session"? "Continue Shift" usually implies pausing.
-        // If I hide the overlay immediately, that's "Continuing".
-        // If I show the overlay with "Continue Shift", they have to click it again.
-        // Let's assume: If meaningful progress (SOS), hide it. If just "Shift Started", update text.
-
-        if (data.sosBeaconShown) {
-            document.getElementById('login-overlay').style.display = 'none';
-        }
-    }
-
     if (data.sosBeaconShown) {
+        document.getElementById('login-overlay').style.display = 'none';
         state.stage = 'SOS_RECEIVED';
 
         // Rebuild SOS Card
         const callList = document.getElementById('calls-list');
         callList.innerHTML = '';
-        const alertCard = document.createElement('div');
-        alertCard.className = 'call-card sos active';
-        alertCard.id = 'alert-s1';
-        alertCard.innerHTML = `
-            <div class="call-header"><span>SOS BEACON</span><span>00:14:22</span></div>
-            <div class="call-source">CRASH DETECTED</div>
-            <div style="color: var(--accent-amber); margin: 5px 0;">Signal Triangulated</div>
-            <div class="call-actions">
-                <button class="action-btn" onclick="window.trackLocation('kalamserry')">TRACK LOCATION</button>
-            </div>
-        `;
+        const alertCard = createSOSCard('alert-s1', 'OFFICER DOWN', 'SECTOR 4 • PANIC #9921', 'kalamserry');
         callList.appendChild(alertCard);
     }
 
     // 2. Tracking Started
     if (data.trackingStarted) {
         const loc = CONFIG.locations.kalamserry;
-        if (!markers['kalamserry'] && map) {
-            markers['kalamserry'] = L.marker([loc.lat, loc.lng], { icon: pinIcon }).addTo(map).bindPopup(loc.label);
-        }
 
-        // Update Card to FIND UNIT
-        const card = document.getElementById('alert-s1');
-        if (card) {
-            card.querySelector('.call-actions').innerHTML = `
-                <button class="action-btn urgent" onclick="window.findNearestUnit()">FIND NEAREST UNIT</button>
-            `;
-        }
+        // Update Field UI
+        const locField = document.getElementById('alert-s1-location');
+        const trackBtn = document.getElementById('alert-s1-track-btn');
+        const unitBtn = document.getElementById('alert-s1-unit-btn');
+        const statusField = document.getElementById('alert-s1-status');
+
+        if (locField) locField.textContent = loc.label;
+        if (trackBtn) trackBtn.remove();
+        if (unitBtn) unitBtn.disabled = false;
+        if (statusField) statusField.textContent = 'OPEN';
     }
 
     // 3. Unit Search Started
-    if (data.unitSearchStarted && !data.unitArrived && !data.unitFound) {
-        // If just scanning, maybe show scanning text?
-        const card = document.getElementById('alert-s1');
-        if (card) {
-            card.querySelector('.call-actions').innerHTML = `<span style="color:var(--text-secondary); font-size: 0.8rem;">SCANNING...</span>`;
-        }
+    if (data.unitSearchStarted) {
+        const unitField = document.getElementById('alert-s1-unit');
+        const unitBtn = document.getElementById('alert-s1-unit-btn');
+        if (unitField) unitField.textContent = "FINDING UNIT...";
+        if (unitBtn) unitBtn.remove();
     }
 
     // 4. Unit Found
     if (data.unitFound) {
         setChatOnline();
-        const card = document.getElementById('alert-s1');
-        if (card && !data.unitArrived) {
-            card.querySelector('.call-actions').innerHTML = `<button class="action-btn" disabled>COMMUNICATE WITH UNIT</button>`;
-        }
+        const unitField = document.getElementById('alert-s1-unit');
+        const dispatchBtn = document.getElementById('alert-s1-dispatch-btn');
+        if (unitField) unitField.textContent = "BETA-1";
     }
 
     // 5. Unit Arrived
@@ -724,24 +772,29 @@ function restoreGameState(data) {
         setChatOnline(); // Ensure chat is online
         enableChat(); // Enable inputs
 
-        // Car at destination
-        const carIcon = L.divIcon({
-            className: 'custom-pin',
-            html: '<div style="font-size: 20px; color: var(--accent-cyan);"><i class="fas fa-car"></i></div>',
-            iconSize: [25, 25],
-            iconAnchor: [12, 12]
-        });
-        if (map) {
-            L.marker([CONFIG.locations.kalamserry.lat, CONFIG.locations.kalamserry.lng], { icon: carIcon }).addTo(map);
-        }
-
         // Update Card
         const card = document.getElementById('alert-s1');
-        if (card) {
-            card.classList.remove('active');
-            card.querySelector('.call-actions').innerHTML = `<span style="color:var(--accent-cyan)">UNIT ON SITE</span>`;
+        const dispatchBtn = document.getElementById('alert-s1-dispatch-btn');
+        const statusField = document.getElementById('alert-s1-status');
+
+        if (card) card.classList.remove('active');
+        if (dispatchBtn) dispatchBtn.remove();
+        if (statusField) statusField.textContent = 'OPEN';
+
+        // Update Chat Status if arrived
+        if (data.unitArrived) {
+            const chatStatus = document.getElementById('alert-s1-chat-status');
+            const chatBtn = document.getElementById('alert-s1-chat-btn');
+            if (chatStatus) chatStatus.textContent = "ACTIVE";
+            if (chatBtn) chatBtn.disabled = false;
         }
 
         addChatMessage("System", "Session restored. Unit is on site.", false);
+    }
+
+    if (data.accidentClosed) {
+        state.scenario1Resolved = true;
+        const cardS1 = document.getElementById('alert-s1');
+        if (cardS1) cardS1.remove();
     }
 }

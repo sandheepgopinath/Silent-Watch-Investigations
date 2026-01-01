@@ -1,9 +1,18 @@
 # Version History
 
+## v2.5
+- **Voiceless Caller**: 
+    - Implemented new premium SOS Alert UI with live timer and status tracking.
+    - Added integrated fields for Location Tracking (with 1s delay) and Unit Assignment.
+    - **Unit AI**: Integrated Gemini 2.0-flash-lite for ground unit Beta-1 with a professional, tactical persona.
+    - **Chat Integration**: Added "Chat Status" and "Chat with Unit" button directly on SOS Alert cards.
+    - Added Typing indicator animation for AI ground units.
+    - Fixed API connectivity issues by implementing dynamic key fetching from Firestore.
+
 ## v2.4
 - **UI**:
+    - Correction of logo position in the sidebar.
     - Replaced sidebar "SILENT WATCH" text with the official icon logo across all dashboard pages.
-    - Centered sidebar logo for improved visual balance.
 
 ## v2.3
 - **Sidebar**:

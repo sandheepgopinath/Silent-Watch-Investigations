@@ -1881,6 +1881,34 @@ body {
     opacity: 0.9;
 }
 
+.action-btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+    position: relative;
+    color: transparent !important;
+}
+
+.action-btn.loading::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-top: -10px;
+    margin-left: -10px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: button-spin 0.6s linear infinite;
+}
+
+@keyframes button-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .action-btn.accept {
     background: var(--accent-gold);
     color: #000;

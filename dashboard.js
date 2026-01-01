@@ -633,14 +633,12 @@ document.addEventListener('DOMContentLoaded', () => {
         acceptCaseBtn.addEventListener('click', async () => {
             const target = acceptCaseBtn.dataset.target;
             if (currentUser) {
-                closeModal();
+                // Show loading state
+                acceptCaseBtn.classList.add('loading');
+                acceptCaseBtn.disabled = true;
+
                 if (target === 'blackwood') {
-                    // acceptCaseBtn.innerText = "Initializing..."; // Removed as per instruction
                     await initializeCaseProgress(currentUser.uid);
-                    // if (blackwoodBtn) { // Removed as per instruction
-                    //     blackwoodBtn.textContent = "OPEN CASE";
-                    //     blackwoodBtn.dataset.status = 'in-progress';
-                    // }
                     window.location.href = 'case-blackwood.html';
                 } else if (target === 'voiceless') {
                     await initializeVoicelessProgress(currentUser.uid);
