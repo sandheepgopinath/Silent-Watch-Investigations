@@ -10,7 +10,13 @@ export async function fetchAgents() {
 
     if (!tableBody) return;
 
-    tableBody.innerHTML = '<tr><td colspan="4" class="loading-text" style="text-align:center; padding: 2rem; color: #aaa;">Accessing Classified Database...</td></tr>';
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center; padding: 3rem;">
+                <div class="loading-spinner"></div>
+                <div style="color: var(--accent-gold); font-size: 0.9rem; letter-spacing: 1px;">ACCESSING CLASSIFIED DATABASE...</div>
+            </td>
+        </tr>`;
 
     try {
         const querySnapshot = await getDocs(collectionGroup(db, 'investigatorProfile'));

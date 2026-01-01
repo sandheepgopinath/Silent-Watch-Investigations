@@ -69,9 +69,10 @@ body {
 
 .sidebar-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     margin-bottom: 3rem;
+    position: relative;
 }
 
 .logo {
@@ -82,9 +83,11 @@ body {
     font-weight: 400;
     /* Not bold */
     display: flex;
+    justify-content: center;
     align-items: center;
     gap: 8px;
     white-space: nowrap;
+    width: 100%;
 }
 
 .header-logo-icon {
@@ -98,6 +101,8 @@ body {
 .close-menu {
     display: none;
     /* Mobile only */
+    position: absolute;
+    right: 0;
     background: none;
     border: none;
     color: var(--text-color);
@@ -470,8 +475,6 @@ body {
 
     /* Fix Sidebar Header Overlap */
     .sidebar-header {
-        padding-left: 2.5rem;
-        /* Space for hamburger icon */
         align-items: center;
     }
 }
@@ -1150,7 +1153,7 @@ body {
     color: #eee;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     #agents-view {
         padding: 0 1rem 2rem 1rem;
     }
@@ -1392,6 +1395,27 @@ body {
 }
 
 
+/* Loading Spinner */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(157, 0, 255, 0.1);
+    border-top: 4px solid var(--accent-gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem auto;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
 /* --- User Feedback Overrides --- */
 
 /* 1. Sidebar Logo White */
@@ -1580,8 +1604,12 @@ body {
 
 /* Sidebar Logo Styling adjustment */
 .sidebar .logo {
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
     width: 100%;
+    font-size: 1rem;
 }
 
 /* Position Close Button (X) to the right, out of the way */

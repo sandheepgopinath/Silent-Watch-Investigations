@@ -1,9 +1,9 @@
 # Version History
 
 ## v2.4
-- **UI/UX**:
-    - **Mobile Agents Page**: Adaptive column visibility. Hidden "Cases Solved" column on small screens to prevent horizontal scrolling.
-    - **General**: Fixed various UI alignment issues and screen resizing behaviors.
+- **UI**:
+    - Replaced sidebar "SILENT WATCH" text with the official icon logo across all dashboard pages.
+    - Centered sidebar logo for improved visual balance.
 
 ## v2.3
 - **Sidebar**:
