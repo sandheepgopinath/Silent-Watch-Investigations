@@ -42,21 +42,7 @@ export { auth, db, googleProvider, doc, getDoc, setDoc, updateDoc, serverTimesta
 
 // Login Function
 export async function loginWithEmail(email, password) {
-    // Test User Bypass
-    if (email === "jane@sw.com" && password === "admin12") {
-        console.log("Test Login Bypass for Jane");
-        const user = {
-            uid: "test-user-jane-id",
-            email: "jane@sw.com",
-            displayName: "Jane Doe",
-            emailVerified: true
-        };
-        sessionStorage.setItem('testUser', JSON.stringify(user));
-        return {
-            success: true,
-            user: user
-        };
-    }
+
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
