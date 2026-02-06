@@ -45,14 +45,16 @@ export async function loginWithEmail(email, password) {
     // Test User Bypass
     if (email === "jane@sw.com" && password === "admin12") {
         console.log("Test Login Bypass for Jane");
+        const user = {
+            uid: "test-user-jane-id",
+            email: "jane@sw.com",
+            displayName: "Jane Doe",
+            emailVerified: true
+        };
+        sessionStorage.setItem('testUser', JSON.stringify(user));
         return {
             success: true,
-            user: {
-                uid: "test-user-jane-id",
-                email: "jane@sw.com",
-                displayName: "Jane Doe",
-                emailVerified: true
-            }
+            user: user
         };
     }
 
@@ -110,6 +112,7 @@ export async function registerUser(email, password, name, phone) {
 // Logout Function
 export async function logoutUser() {
     try {
+        sessionStorage.removeItem('testUser');
         await signOut(auth);
         window.location.href = 'index.html';
         return { success: true };
@@ -125,6 +128,17 @@ export function monitorAuthState(onUser, onNoUser) {
         if (user) {
             onUser(user);
         } else {
+            // Check for test user in session storage
+            const testUserJson = sessionStorage.getItem('testUser');
+            if (testUserJson) {
+                try {
+                    const testUser = JSON.parse(testUserJson);
+                    onUser(testUser);
+                    return;
+                } catch (e) {
+                    console.error("Error parsing test user", e);
+                }
+            }
             onNoUser();
         }
     });

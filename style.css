@@ -1,14 +1,19 @@
 /* Reuse variables from before with additions */
 :root {
     --bg-color: #050505;
-    --sidebar-bg: rgba(10, 5, 20, 0.95);
-    --card-bg: #111;
-    --text-color: #eee;
-    --text-muted: #888;
-    --accent-gold: #e9d5ff;
-    /* Global Accent Mapped to Purple */
-    --accent-purple: #9d00ff;
-    --border-color: rgba(157, 0, 255, 0.2);
+    --sidebar-bg: rgba(20, 10, 5, 0.95);
+    /* Darker warm tone */
+    --card-bg: rgba(20, 10, 5, 0.6);
+    --text-color: #fffae6;
+    /* White with light golden tint */
+    --text-muted: rgba(255, 250, 230, 0.6);
+    --accent-gold: #ffd700;
+    /* Gold */
+    /* Global Accent Re-Mapped to Bronze/Gold */
+    --accent-purple: #b8860b;
+    /* Dark Goldenrod/Bronze */
+    --border-color: rgba(255, 215, 0, 0.2);
+    --glass-border: rgba(255, 215, 0, 0.3);
     --font-heading: 'Cinzel', serif;
     --font-body: 'Lato', sans-serif;
     --sidebar-width: 260px;
@@ -95,7 +100,7 @@ body {
     /* Match text height */
     width: auto;
     vertical-align: middle;
-    filter: drop-shadow(0 0 5px rgba(157, 0, 255, 0.5));
+    filter: drop-shadow(0 0 5px rgba(184, 134, 11, 0.5));
 }
 
 .close-menu {
@@ -130,9 +135,9 @@ body {
 
 .nav-links a:hover,
 .nav-links a.active {
-    background: rgba(157, 0, 255, 0.15);
+    background: rgba(184, 134, 11, 0.15);
     color: var(--accent-gold);
-    box-shadow: 0 0 15px rgba(157, 0, 255, 0.1);
+    box-shadow: 0 0 15px rgba(184, 134, 11, 0.1);
 }
 
 .user-profile {
@@ -228,7 +233,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    text-shadow: 0 0 15px rgba(157, 0, 255, 0.5);
+    text-shadow: 0 0 15px rgba(184, 134, 11, 0.5);
     z-index: 2;
 }
 
@@ -292,8 +297,8 @@ body {
 
 .case-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 40px -10px rgba(157, 0, 255, 0.15);
-    border-color: rgba(157, 0, 255, 0.4);
+    box-shadow: 0 15px 40px -10px rgba(184, 134, 11, 0.15);
+    border-color: rgba(184, 134, 11, 0.4);
 }
 
 .case-image {
@@ -679,7 +684,7 @@ body {
 }
 
 .user-profile:hover {
-    background: rgba(157, 0, 255, 0.1);
+    background: rgba(184, 134, 11, 0.1);
 }
 
 .avatar {
@@ -1186,7 +1191,7 @@ body {
     color: var(--accent-gold);
     margin-bottom: 1rem;
     margin-top: 0;
-    text-shadow: 0 0 20px rgba(157, 0, 255, 0.4);
+    text-shadow: 0 0 20px rgba(184, 134, 11, 0.4);
 }
 
 .agents-header-section h2 {
@@ -1290,11 +1295,13 @@ body {
 .agents-table td {
     padding: 1.2rem 1.5rem;
     text-align: left;
-    border-bottom: 1px solid rgba(157, 0, 255, 0.1);
+    border-bottom: 1px solid rgba(184, 134, 11, 0.1);
+    color: var(--text-color);
+    transition: 0.3s;
 }
 
 .agents-table th {
-    background: rgba(157, 0, 255, 0.05);
+    background: rgba(184, 134, 11, 0.05);
     color: var(--text-muted);
     font-weight: 400;
     font-size: 0.9rem;
@@ -1308,7 +1315,7 @@ body {
 }
 
 .agents-table tbody tr:hover {
-    background: rgba(157, 0, 255, 0.03);
+    background: rgba(184, 134, 11, 0.03);
 }
 
 .agents-table td {
@@ -1378,7 +1385,7 @@ body {
 .page-btn:hover:not(.disabled) {
     border-color: var(--accent-gold);
     color: #fff;
-    background: rgba(157, 0, 255, 0.1);
+    background: rgba(184, 134, 11, 0.1);
 }
 
 .page-btn.active {
@@ -1399,7 +1406,7 @@ body {
 .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid rgba(157, 0, 255, 0.1);
+    border: 4px solid rgba(184, 134, 11, 0.1);
     border-top: 4px solid var(--accent-gold);
     border-radius: 50%;
     animation: spin 1s linear infinite;

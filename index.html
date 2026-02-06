@@ -13,11 +13,16 @@
     <style>
         :root {
             --bg-color: #050505;
-            --accent-purple: #7b2cbf;
-            --accent-cyan: #00b4d8;
-            --text-color: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.05);
+            --accent-purple: #b8860b;
+            /* Dark Goldenrod/Bronze */
+            --accent-cyan: #ffd700;
+            /* Gold */
+            --accent-gold: #ffd700;
+            --text-color: #fffae6;
+            /* White with light golden tint */
+            --glass-bg: rgba(20, 10, 5, 0.6);
+            /* Darker, warmer glass */
+            --glass-border: rgba(255, 215, 0, 0.3);
         }
 
         * {
@@ -28,6 +33,10 @@
 
         body {
             background-color: var(--bg-color);
+            background-image: url('assets/landing_bg.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             color: var(--text-color);
             font-family: 'Lato', sans-serif;
             height: 100vh;
@@ -35,27 +44,42 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            position: relative;
         }
 
-        /* Ambient Glows */
+        /* Dark Overlay for readability */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+
+        /* Ambient Glows - Adjusted for Warmth */
         .ambient-glow {
             position: absolute;
             width: 600px;
             height: 600px;
             border-radius: 50%;
             filter: blur(120px);
-            opacity: 0.4;
+            opacity: 0.3;
             z-index: -1;
         }
 
         .ambient-glow.purple {
             background: var(--accent-purple);
+            /* Bronze */
             top: -100px;
             left: -100px;
         }
 
         .ambient-glow.cyan {
-            background: var(--accent-cyan);
+            background: var(--accent-gold);
+            /* Gold */
             bottom: -100px;
             right: -100px;
         }
@@ -75,7 +99,7 @@
             -webkit-backdrop-filter: blur(20px);
             border-radius: 24px;
             text-align: center;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
             position: relative;
             overflow: hidden;
         }
@@ -94,8 +118,8 @@
         .ring {
             position: absolute;
             border-radius: 50%;
-            border: 1px solid rgba(0, 180, 216, 0.3);
-            box-shadow: 0 0 10px rgba(0, 180, 216, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
         }
 
         .ring-1 {
@@ -108,23 +132,24 @@
             width: 70%;
             height: 70%;
             animation: spin 7s linear infinite reverse;
-            border-color: rgba(123, 44, 191, 0.4);
+            border-color: rgba(184, 134, 11, 0.4);
+            /* Bronze */
         }
 
         .ring-3 {
             width: 40%;
             height: 40%;
             animation: spin 12s linear infinite;
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 250, 230, 0.2);
         }
 
         .dot {
             position: absolute;
             width: 6px;
             height: 6px;
-            background: var(--accent-cyan);
+            background: var(--accent-gold);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-gold);
         }
 
         /* Dot positioning on rings */
@@ -163,15 +188,16 @@
             font-size: 2rem;
             letter-spacing: 4px;
             margin-bottom: 0.5rem;
-            background: linear-gradient(to right, #ffffff, #a0a0a0);
+            background: linear-gradient(to right, #ffffff, #ffd700);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
         }
 
         p.subtitle {
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 250, 230, 0.7);
             letter-spacing: 1px;
             margin-bottom: 0;
         }
@@ -189,10 +215,10 @@
         .input-group input {
             width: 100%;
             padding: 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 215, 0, 0.2);
             border-radius: 12px;
-            color: white;
+            color: var(--text-color);
             font-family: 'Lato', sans-serif;
             font-size: 0.95rem;
             outline: none;
@@ -200,57 +226,58 @@
         }
 
         .input-group input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 250, 230, 0.3);
         }
 
         .input-group input:focus {
-            background: rgba(0, 0, 0, 0.4);
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 15px rgba(0, 180, 216, 0.2);
+            background: rgba(0, 0, 0, 0.6);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
         }
 
-        /* High Visibility Button per Request */
+        /* High Visibility Button per Request - Golden Theme */
         .auth-btn {
             width: 100%;
             padding: 1rem;
             background: transparent;
-            border: 1px solid white;
-            color: white;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
             font-family: 'Cinzel', serif;
             font-weight: 700;
             font-size: 1rem;
             border-radius: 50px;
-            /* Rounded pill shape fits the Ley Lines theme */
             cursor: pointer;
             letter-spacing: 2px;
             transition: all 0.3s ease;
             text-transform: uppercase;
             margin-top: 1rem;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
         }
 
         .auth-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            border-color: #fff;
+            color: #fff;
         }
 
         .google-btn {
-            background: white;
+            background: rgba(255, 255, 255, 0.9);
             color: #333;
             border: none;
             font-family: 'Lato', sans-serif;
-            /* Keep Google button standard font */
             text-transform: none;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             margin-top: 1rem;
+            box-shadow: none;
         }
 
         .google-btn:hover {
-            background: #f0f0f0;
+            background: #fff;
             color: #000;
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
         }
@@ -258,7 +285,7 @@
         .divider {
             margin: 1.5rem 0;
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 250, 230, 0.3);
             display: flex;
             align-items: center;
         }
@@ -268,7 +295,7 @@
             content: '';
             flex: 1;
             height: 1px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 215, 0, 0.2);
         }
 
         .divider::before {
@@ -285,9 +312,6 @@
             margin-top: 1rem;
             min-height: 1.2em;
         }
-
-        /* Locked Indicator Animation Idea? */
-        /* Let's keep it simple for now as requested */
     </style>
 </head>
 
