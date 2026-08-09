@@ -1521,7 +1521,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const genAI = new GoogleGenerativeAI(apiKey);
-                const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
                 // Get User Name
                 const nameUser = currentUser && currentUser.displayName ? currentUser.displayName.split(' ')[0] : "Detective";
@@ -1659,6 +1659,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 return responseText;
             } catch (e) {
+                console.error("Gemini response generation error:", e);
                 return "System: Error generating response.";
             }
         }

@@ -140,36 +140,7 @@ body {
     box-shadow: 0 0 15px rgba(184, 134, 11, 0.1);
 }
 
-.user-profile {
-    border-top: 1px solid var(--border-color);
-    padding-top: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
 
-.avatar {
-    width: 40px;
-    height: 40px;
-    background: #333;
-    border-radius: 50%;
-    border: 1px solid var(--accent-gold);
-}
-
-.user-info {
-    display: flex;
-    flex-direction: column;
-    font-size: 0.85rem;
-}
-
-.user-info .name {
-    font-weight: bold;
-}
-
-.user-info .status {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
 
 /* Main Content */
 .main-content {
@@ -2257,8 +2228,9 @@ body {
     transition: 0.3s;
     display: flex;
     flex-direction: column;
-    width: 300px;
-    /* Fixed small width */
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
 }
 
 .suspect-card:hover {

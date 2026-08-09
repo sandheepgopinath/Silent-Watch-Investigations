@@ -443,14 +443,14 @@ async function handleAIResponse(playerMsg) {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         // Keep history manageable
         if (chatHistory.length > 10) chatHistory.shift();
 
         const fullPrompt = `${context}\n\nRecent History:\n${chatHistory.join('\n')}\n\nControl (User): ${playerMsg}\n\nBeta-1:`;
 
-        console.log("Calling Gemini (2.0-flash-lite) with prompt:", fullPrompt);
+        console.log("Calling Gemini (2.5-flash) with prompt:", fullPrompt);
 
         const result = await model.generateContent(fullPrompt);
         const response = await result.response;
